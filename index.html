@@ -246,7 +246,7 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=3"></script>
+<script src="config.js?v=4"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -379,6 +379,7 @@ const T={
   msgTab:'الرسائل',chatTitle:'المراسلة مع الإدارة',chatHint:'اكتب استفسارك وسيرد عليك أحد الموظفين هنا.',chatPh:'اكتب رسالة…',you2:'أنت',staffLbl:'الإدارة',
   convos:'المحادثات',newConvo:'محادثة جديدة',sidPh:'الرقم الجامعي',open2:'فتح',noConvos:'لا توجد محادثات بعد.',pickConvo:'اختر محادثة أو ابدأ واحدة جديدة.',
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
+  thisHour:'هذه الساعة',msgAllDay:'رسالة لكل طلاب هذا اليوم',
   netTitle:'لا اتصال',netText:'تعذّر الوصول إلى قاعدة البيانات. تُعاد المحاولة تلقائياً؛ تحقق من اتصالك بالإنترنت.',
   libFail:'تعذّر تحميل مكتبة الاتصال بقاعدة البيانات. تحقق من الاتصال بالإنترنت ثم أعد تحميل الصفحة.',
   setupTitle:'الإعداد مطلوب',setupText:'لم يُربط التطبيق بقاعدة البيانات بعد. افتح الملف config.js وضع فيه رابط مشروع Supabase والمفتاح العام، كما هو موضح في ملف README.',bootTitle:'إنشاء أول مدير نظام',bootHint:'لا يوجد مدير نظام بعد. أنشئ حسابك الآن؛ بعد ذلك لن تظهر هذه الشاشة.',createAdmin:'إنشاء الحساب والدخول',bootDone:'تم إنشاء مدير النظام بالفعل. سجّل الدخول.',confirmOff:'تأكيد البريد مفعّل في Supabase. يجب إيقاف خيار Confirm email (راجع README).',
@@ -449,6 +450,7 @@ const T={
   msgTab:'Messages',chatTitle:'Messages with the center',chatHint:'Write your question and a staff member will reply here.',chatPh:'Write a message…',you2:'You',staffLbl:'Center staff',
   convos:'Conversations',newConvo:'New conversation',sidPh:'Student ID',open2:'Open',noConvos:'No conversations yet.',pickConvo:'Pick a conversation or start a new one.',
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
+  thisHour:'This hour',msgAllDay:'Message everyone today',
   netTitle:'Offline',netText:'Can\u2019t reach the database. Retrying automatically; check your internet connection.',
   libFail:'The database library couldn\u2019t load. Check your internet connection and reload the page.',
   setupTitle:'Setup needed',setupText:'The app isn\u2019t connected to a database yet. Open config.js and add your Supabase project URL and public key, as described in the README.',bootTitle:'Create the first system admin',bootHint:'No system admin exists yet. Create your account now; this screen won\u2019t appear again.',createAdmin:'Create account and sign in',bootDone:'A system admin already exists. Please sign in.',confirmOff:'Email confirmation is on in Supabase. Turn off "Confirm email" (see the README).',
@@ -522,8 +524,8 @@ function makeSupabaseStore(C){
     async saveConfig(c){const r=must(await stf.from('config').update({data:c,updated_at:new Date().toISOString()}).eq('id',1).select('id'));if(!r||!r.length) throw {code:'invalid_argument'}},
 
     /* bookings */
-    subscribe(date,cb){
-      if(staffOn) return live(stf,{table:'bookings',filter:`date=eq.${date}`,fetch:async()=>split(must(await stf.from('bookings').select('*').eq('date',date))),cb:v=>cb(v.b,v.d)});
+    subscribe(date,cb,asStaff){
+      if(asStaff) return live(stf,{table:'bookings',filter:`date=eq.${date}`,fetch:async()=>split(must(await stf.from('bookings').select('*').eq('date',date))),cb:v=>cb(v.b,v.d)});
       // students and visitors see seat counts only
       return live(stu,{table:'bookings',filter:`date=eq.${date}`,poll:15000,fetch:async()=>{
         const rows=must(await stu.rpc('availability',{p_date:date}));const b={},d={};let k=0;
@@ -771,9 +773,9 @@ function Bootstrap({L,lang,store,onDone}){
   </form></section>`;
 }
 
-function useDay(store,date){
+function useDay(store,date,asStaff){
   const [state,setState]=useState({b:{},d:{},ready:false});
-  useEffect(()=>{if(!store) return;setState({b:{},d:{},ready:false});return store.subscribe(date,(b,d)=>setState({b,d,ready:true}))},[store,date]);
+  useEffect(()=>{if(!store) return;setState({b:{},d:{},ready:false});return store.subscribe(date,(b,d)=>setState({b,d,ready:true}),!!asStaff)},[store,date,!!asStaff]);
   return state;
 }
 function counts(b,d,date,slotId){
@@ -1220,9 +1222,11 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
   const [slotIdRaw,setSlotId]=useState(defaultDeskSlot);
   const slotId=SLOTS.some(s=>s.id===slotIdRaw)?slotIdRaw:(SLOTS[0]||{}).id;
   const [sec,setSec]=useState('all');const [q,setQ]=useState('');const [exp,setExp]=useState(false);const [msgTo,setMsgTo]=useState(null);
-  const {b,d,ready}=useDay(store,date);
+  const {b,d,ready}=useDay(store,date,true);
+  const [allDay,setAllDay]=useState(false);
   const closed=closedInfo(date);
   const per=counts(b,d,date,slotId);
+  const perSlot=id=>Object.entries(b).filter(([k,x])=>!x._syn&&x.slotId===id&&occupies(effStatus(x,d[k]))).length;
   const used=SECTIONS.reduce((a,s)=>a+per[s.id].booked+per[s.id].in,0);
   const inCount=SECTIONS.reduce((a,s)=>a+per[s.id].in,0);
   const slot=slotById(slotId);
@@ -1230,10 +1234,10 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
   const lateNow=isToday&&n>=toMin(slot.s)+LATE_MIN;
 
   const qq=q.trim().toLowerCase();
-  const rows=Object.entries(b).map(([id,x])=>({id,...x,st:effStatus(x,d[id])}))
-    .filter(r=>qq?(r.studentName.toLowerCase().includes(qq)||r.studentId.includes(qq)||r.code.toLowerCase().includes(qq)):r.slotId===slotId)
+  const rows=Object.entries(b).filter(([id,x])=>!x._syn).map(([id,x])=>({id,...x,st:effStatus(x,d[id])}))
+    .filter(r=>qq?((r.studentName||'').toLowerCase().includes(qq)||(r.studentId||'').includes(qq)||(r.code||'').toLowerCase().includes(qq)):(allDay||r.slotId===slotId))
     .filter(r=>sec==='all'||r.section===sec)
-    .sort((a,b2)=>a.slotId-b2.slotId||order(a.st)-order(b2.st)||a.studentName.localeCompare(b2.studentName));
+    .sort((a,b2)=>toMin(slotById(a.slotId).s)-toMin(slotById(b2.slotId).s)||order(a.st)-order(b2.st)||(a.studentName||'').localeCompare(b2.studentName||''));
   function order(s){return{booked:0,'checked-in':1,'no-show':2,cancelled:3}[s]??4}
 
   async function act(r,status){
@@ -1243,15 +1247,16 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
       say(status==='checked-in'?L.checkinToast:L.noshowToast);
     }catch(e){say(L.errGeneric)}
   }
-  const dates=[-1,0,1].map(k=>{const x=new Date();x.setDate(x.getDate()+k);return isoOf(x)});
+  const dates=[-1,0,1,2,3,4,5,6,7].map(k=>{const x=new Date();x.setDate(x.getDate()+k);return isoOf(x)});
 
   return html`
   <section className="panel rail">
     <div className="row" style=${{justifyContent:'space-between'}}>
-      <div className="seg">${dates.map((dt,i)=>html`<button key=${dt} aria-pressed=${dt===date} onClick=${()=>setDate(dt)}>${i===1?L.today:dayLabel(dt,lang)} <span className="num">${Number(dt.slice(8))}</span></button>`)}</div>
-      <span className="hint">${longDate(date,lang)}</span>
+      <span className="label">${L.date}</span>
+      <div className="row" style=${{gap:'8px'}}><span className="hint">${longDate(date,lang)}</span><input id="dk-date" type="date" dir="ltr" className="search" style=${{width:'auto',padding:'6px 10px'}} value=${date} onChange=${e=>e.target.value&&setDate(e.target.value)} aria-label=${L.date}/></div>
     </div>
-    <div className="chips">${SLOTS.map(s=>{const live=isToday&&n>=toMin(s.s)&&n<toMin(s.e);return html`<button key=${s.id} className="chip num" aria-pressed=${s.id===slotId} onClick=${()=>{setSlotId(s.id);setQ('')}}><span className="d1">${live?'● '+L.now:(s.shift==='m'?L.morning:L.evening).split(' ').slice(-1)[0]}</span><span className="d2" style=${{fontSize:'14px'}}>${slotLabel(s,L)}</span></button>`})}</div>
+    <div className="chips">${dates.map((dt,i)=>html`<button key=${dt} className="chip" aria-pressed=${dt===date} onClick=${()=>setDate(dt)}><span className="d1">${i===1?L.today:i===2?L.tomorrow:dayLabel(dt,lang)}</span><span className="d2 num">${Number(dt.slice(8))}</span></button>`)}</div>
+    <div className="chips">${SLOTS.map(s=>{const live=isToday&&n>=toMin(s.s)&&n<toMin(s.e);return html`<button key=${s.id} className="chip num" aria-pressed=${s.id===slotId} onClick=${()=>{setSlotId(s.id);setQ('');setAllDay(false)}}><span className="d1">${live?'● '+L.now:(s.shift==='m'?L.morning:L.evening).split(' ').slice(-1)[0]}${ready&&perSlot(s.id)>0?html` · <b>${perSlot(s.id)}</b>`:''}</span><span className="d2" style=${{fontSize:'14px'}}>${slotLabel(s,L)}</span></button>`})}</div>
   </section>
 
   ${closed&&html`<div className="banner"><b>${L.closedB}</b><span>${closed.reason||L.closedWeekly}${Object.values(b).some(x=>x.status!=='cancelled')?' — '+L.bookingsWarn:''}</span></div>`}
@@ -1268,7 +1273,7 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
   </section>
 
   <section className="panel" style=${{display:'grid',gap:'12px'}}>
-    <div className="row" style=${{justifyContent:'space-between'}}><h2 style=${{margin:0}}>${qq?L.search.split(' ')[0]:L.roster} <span className="hint num">(${rows.length})</span></h2><div className="row" style=${{gap:'8px'}}>${(()=>{const t=rows.filter(r=>r.uid&&r.st!=='cancelled');return !qq&&t.length>0&&html`<button className="btn" onClick=${()=>setMsgTo(t.map(r=>({uid:r.uid,name:r.studentName,sid:r.studentId,code:r.code})))}>${L.msgAll}</button>`})()}<button className="btn pri" onClick=${()=>setExp(true)}>${L.exportBtn}</button></div></div>
+    <div className="row" style=${{justifyContent:'space-between'}}><div className="row" style=${{gap:'10px'}}><h2 style=${{margin:0}}>${qq?L.search.split(' ')[0]:allDay?L.wholeDay:L.roster} <span className="hint num">(${rows.length})</span></h2>${!qq&&html`<div className="seg"><button aria-pressed=${!allDay} onClick=${()=>setAllDay(false)}>${L.thisHour}</button><button aria-pressed=${allDay} onClick=${()=>setAllDay(true)}>${L.wholeDay}</button></div>`}</div><div className="row" style=${{gap:'8px'}}>${(()=>{const t=rows.filter(r=>r.uid&&r.st!=='cancelled');return !qq&&t.length>0&&html`<button className="btn" onClick=${()=>setMsgTo(t.map(r=>({uid:r.uid,name:r.studentName,sid:r.studentId,code:r.code})))}>${allDay?L.msgAllDay:L.msgAll}</button>`})()}<button className="btn pri" onClick=${()=>setExp(true)}>${L.exportBtn}</button></div></div>
     ${msgTo&&html`<${MessageModal} L=${L} store=${store} targets=${msgTo} who=${who} say=${say} onClose=${()=>setMsgTo(null)}/>`}
     ${exp&&html`<${ExportModal} L=${L} lang=${lang} b=${b} d=${d} date=${date} slotId=${slotId} say=${say} onClose=${()=>setExp(false)}/>`}
     <div className="row">
@@ -1276,7 +1281,7 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
       <select id="dk-sec" className="search" style=${{flex:'0 1 200px'}} value=${sec} onChange=${e=>setSec(e.target.value)}><option value="all">${L.allSections}</option>${SECTIONS.map(s=>html`<option key=${s.id} value=${s.id}>${s[lang]}</option>`)}</select>
     </div>
     <div className="tablewrap"><table>
-      <thead><tr><th>${L.colTicket}</th><th>${L.colStudent}</th><th>${L.colSection}</th>${qq&&html`<th>${L.slot}</th>`}<th>${L.colStatus}</th><th></th></tr></thead>
+      <thead><tr><th>${L.colTicket}</th><th>${L.colStudent}</th><th>${L.colSection}</th>${(qq||allDay)&&html`<th>${L.slot}</th>`}<th>${L.colStatus}</th><th></th></tr></thead>
       <tbody>${!ready?html`<tr><td colSpan="6" className="empty">…</td></tr>`:rows.length===0?html`<tr><td colSpan="6" className="empty">${qq?L.notFound:L.none}</td></tr>`:rows.map(r=>{
         const rsl=slotById(r.slotId);const late=r.st==='booked'&&isToday&&n>=toMin(rsl.s)+LATE_MIN&&n<toMin(rsl.e)+60;
         const badge=r.st==='booked'&&slotPhase(r.date,rsl)==='ended'?'expired':r.st==='booked'?'booked':r.st;
@@ -1284,7 +1289,7 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
           <td><span className="code" dir="ltr" style=${{fontSize:'13px'}}>${r.code}</span></td>
           <td><div style=${{fontWeight:600}}>${r.studentName}</div><div className="hint mono num" dir="ltr" style=${{textAlign:'start'}}>${r.studentId}</div></td>
           <td>${secById(r.section)[lang]}</td>
-          ${qq&&html`<td className="num">${slotLabel(rsl,L)}</td>`}
+          ${(qq||allDay)&&html`<td className="num">${slotLabel(rsl,L)}</td>`}
           <td><span className=${'pill '+BADGE_CLS[badge]}>${L['st_'+badge]}</span>${late&&html` <span className="pill s-warn">${L.late}</span>`}${d[r.id]&&d[r.id].code===r.code&&d[r.id].by&&html`<div className="hint" style=${{fontSize:'11.5px',marginTop:'3px'}}>${L.by} ${d[r.id].byName||d[r.id].by}</div>`}</td>
           <td><div className="acts">
             ${r.st==='booked'&&html`<button className="btn ok" onClick=${()=>act(r,'checked-in')}>${L.checkIn}</button><button className="btn bad" onClick=${()=>act(r,'no-show')}>${L.noShow}</button>`}
