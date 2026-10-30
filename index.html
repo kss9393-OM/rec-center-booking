@@ -1,0 +1,1672 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="copyright" content="© 2026 Services Squire LLC. All rights reserved.">
+<style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Rec Center Booking</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one column app shell — sticky header with view tabs, then a control rail (date / shift / hour) over a 7-zone floor grid; desk view swaps the grid for a gauge + roster. */
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --surface-2:#E9EDF3; --line:#D6DCE5;
+  --fg:#111827; --muted:#5B6576; --accent:#2F5BEA; --accent-ink:#FFFFFF; --accent-soft:#E2E9FD;
+  --ok:#0E9F6E; --ok-soft:#DDF5EA; --warn:#B7791F; --warn-soft:#FBEFD5; --bad:#D9344F; --bad-soft:#FBE1E6;
+  --felt:#0F5F4A;
+  --f-display:"Readex Pro","IBM Plex Sans Arabic",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Arabic","Readex Pro",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B0F19; --surface:#121827; --surface-2:#1A2234; --line:#263049;
+  --fg:#E7EBF3; --muted:#93A0B8; --accent:#6E8FFF; --accent-ink:#0B0F19; --accent-soft:#1D2950;
+  --ok:#34D399; --ok-soft:#10322A; --warn:#FBBF24; --warn-soft:#3A2D10; --bad:#FB7185; --bad-soft:#3D1A24;
+  --felt:#1E8C6C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B0F19; --surface:#121827; --surface-2:#1A2234; --line:#263049;
+  --fg:#E7EBF3; --muted:#93A0B8; --accent:#6E8FFF; --accent-ink:#0B0F19; --accent-soft:#1D2950;
+  --ok:#34D399; --ok-soft:#10322A; --warn:#FBBF24; --warn-soft:#3A2D10; --bad:#FB7185; --bad-soft:#3D1A24;
+  --felt:#1E8C6C; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--f-mono)}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.topin{display:flex;align-items:center;gap:12px;padding-block:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.mark{width:36px;height:36px;border-radius:10px;background:var(--felt);display:grid;place-items:center;flex:none}
+.brand h1{font-size:17px;font-weight:600;line-height:1.2}
+.brand small{display:block;color:var(--muted);font-size:12px;font-family:var(--f-body)}
+.tabs{display:flex;background:var(--surface-2);border-radius:10px;padding:3px;gap:2px}
+.tabs button{border:0;background:transparent;padding:7px 14px;border-radius:8px;font-weight:500;font-size:14px;color:var(--muted)}
+.tabs button[aria-pressed="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.lang{border:1px solid var(--line);background:transparent;border-radius:8px;padding:6px 11px;font-weight:600;font-size:13px}
+
+main{padding-block:20px 48px;display:grid;gap:20px}
+.banner{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-radius:10px;background:var(--warn-soft);color:var(--fg);font-size:13.5px}
+.banner b{color:var(--warn)}
+.banner.ok{background:var(--ok-soft)}.banner.ok b{color:var(--ok)}
+
+.rail{display:grid;gap:12px}
+.label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 12px;text-align:center;min-width:64px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip:disabled{opacity:.45;cursor:not-allowed}
+.chip .d1{display:block;font-size:12px;opacity:.8}
+.chip .d2{display:block;font-family:var(--f-display);font-weight:600;font-size:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:8px 14px;font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.seg button+button{border-inline-start:1px solid var(--line)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.zone{position:relative;text-align:start;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:14px;display:grid;gap:10px}
+.zone:not(:disabled):hover{border-color:var(--accent)}
+.zone:disabled{cursor:not-allowed}
+.zone .hd{display:flex;align-items:center;gap:10px}
+.zone .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2);color:var(--fg);flex:none}
+.zone h3{font-size:16px;font-weight:600;line-height:1.25}
+.zone .sub{font-size:12.5px;color:var(--muted)}
+.seats{display:flex;flex-wrap:wrap;gap:4px}
+.seat{width:12px;height:12px;border-radius:3px;background:var(--line)}
+.seat.free{background:var(--st)}
+.zone .ft{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.big{font-family:var(--f-display);font-size:24px;font-weight:600;line-height:1;color:var(--st)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--stsoft);color:var(--st);white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.s-ok{--st:var(--ok);--stsoft:var(--ok-soft)}
+.s-warn{--st:var(--warn);--stsoft:var(--warn-soft)}
+.s-bad{--st:var(--bad);--stsoft:var(--bad-soft)}
+.s-acc{--st:var(--accent);--stsoft:var(--accent-soft)}
+.s-mut{--st:var(--muted);--stsoft:var(--surface-2)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.panel h2{font-size:17px;font-weight:600;margin-bottom:10px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 14px;font-weight:500;font-size:14px;display:inline-flex;align-items:center;gap:6px;justify-content:center}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.btn.bad{color:var(--bad);border-color:var(--bad)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.field{display:grid;gap:5px}
+.field label{font-size:13px;font-weight:500}
+.field input,.field select,.search{border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:10px 12px;width:100%;min-width:0}
+.hint{font-size:12.5px;color:var(--muted)}
+.err{font-size:13.5px;color:var(--bad);background:var(--bad-soft);padding:9px 12px;border-radius:9px}
+
+.scrim{position:fixed;inset:0;background:rgba(5,8,15,.55);z-index:20;display:grid;place-items:center;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));overflow-y:auto}
+.modal{background:var(--surface);border-radius:16px;width:100%;max-width:440px;padding:20px;display:grid;gap:14px;border:1px solid var(--line)}
+.modal.wide{max-width:640px}
+.modal .mh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.modal h2{font-size:19px;font-weight:600}
+.recap{display:flex;gap:8px;flex-wrap:wrap}
+.tag{background:var(--surface-2);border-radius:8px;padding:4px 10px;font-size:13px}
+
+/* Ticket */
+.ticket{display:grid;grid-template-columns:1fr auto;border-radius:16px;background:var(--surface);border:1px solid var(--line);overflow:hidden;position:relative}
+.ticket .main{padding:18px;display:grid;gap:12px;min-width:0}
+.ticket .stub{padding:18px;display:grid;place-items:center;gap:8px;border-inline-start:2px dashed var(--line);position:relative;background:var(--surface-2)}
+.ticket .stub::before,.ticket .stub::after{content:"";position:absolute;width:20px;height:20px;border-radius:50%;background:var(--surface);inset-inline-start:-11px}
+.ticket .stub::before{top:-11px}.ticket .stub::after{bottom:-11px}
+.qr{width:132px;height:132px;background:#fff;padding:8px;border-radius:8px}
+.qr svg{width:100%;height:100%;display:block}
+.code{font-family:var(--f-mono);font-weight:600;font-size:15px;letter-spacing:.04em}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+.kv div{min-width:0}
+.kv dt{font-size:11.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+.kv dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.ticket .band{height:6px;background:var(--felt);grid-column:1/-1}
+@media (max-width:520px){.ticket{grid-template-columns:1fr}.ticket .stub{border-inline-start:0;border-top:2px dashed var(--line)}.ticket .stub::before,.ticket .stub::after{display:none}}
+
+/* Desk */
+.deskTop{display:grid;grid-template-columns:minmax(0,280px) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.deskTop{grid-template-columns:1fr}}
+.gauge{display:grid;place-items:center;gap:6px;text-align:center}
+.gauge svg{width:180px;height:auto}
+.bars{display:grid;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(90px,140px) minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13.5px}
+.track{height:10px;border-radius:999px;background:var(--surface-2);overflow:hidden;display:flex}
+.track i{display:block;height:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend span::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--c)}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}
+th{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:start;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.late td{background:var(--warn-soft)}
+.acts{display:flex;gap:6px;justify-content:flex-end}
+.empty{text-align:center;color:var(--muted);padding:28px 10px}
+.toast{position:fixed;inset-inline:0;bottom:calc(20px + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;z-index:30;pointer-events:none;padding-inline:16px}
+.toast div{background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:500}
+.mine{display:grid;gap:10px}
+.mineRow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.logo{width:36px;height:36px;border-radius:10px;object-fit:contain;background:var(--surface-2);flex:none}
+.chip.off{border-style:dashed;color:var(--muted)}
+.chip.off[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--surface)}
+.offTag{font-size:10.5px;color:var(--bad);font-weight:600}
+.chip.off[aria-pressed="true"] .offTag{color:inherit}
+.closedBox{background:var(--bad-soft);border-color:transparent;display:grid;gap:6px}
+.closedBox h2{color:var(--bad);margin:0}
+
+/* Settings */
+.sgrid{display:grid;gap:14px}
+.sgrid h2{margin:0}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.logoBox{width:88px;height:88px;border-radius:16px;border:1px dashed var(--line);display:grid;place-items:center;background:var(--bg);flex:none;overflow:hidden}
+.logoBox img{width:100%;height:100%;object-fit:contain}
+.zlist{display:grid;gap:10px}
+.zrow{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr) 92px auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.zrow input,.hrow input{background:var(--surface)}
+.icons{display:flex;gap:4px;flex-wrap:wrap}
+.icons button{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;padding:0;color:var(--muted)}
+.icons button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.icons svg{width:18px;height:18px}
+.hrow{display:flex;gap:10px;align-items:end;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.hrow .tf{flex:1 1 120px;min-width:0}
+.crow{display:grid;grid-template-columns:170px minmax(0,1fr) auto;gap:10px;align-items:center}
+.rm{align-self:end}
+.hrow .rm{margin-inline-start:auto}
+.loginBox{max-width:420px;width:100%;margin:24px auto}
+/* chat */
+.chatLog{display:flex;flex-direction:column;gap:8px;max-height:380px;min-height:160px;overflow-y:auto;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.bub{max-width:80%;align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:14px;border-start-start-radius:4px;padding:8px 12px;display:grid;gap:2px}
+.bub.own{align-self:flex-end;background:var(--accent-soft);border-color:transparent;border-start-start-radius:14px;border-start-end-radius:4px}
+.bub .bh{font-size:11.5px;font-weight:600;color:var(--muted)}
+.bub .bt{white-space:pre-wrap;overflow-wrap:anywhere}
+.bub .bm{font-size:11px;color:var(--muted)}
+.composer{display:flex;gap:8px;align-items:flex-end}
+.composer textarea{flex:1;resize:vertical;min-height:44px}
+.msgGrid{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:16px;min-height:480px}
+.tlist{display:grid;gap:8px;align-content:start;border-inline-end:1px solid var(--line);padding-inline-end:16px;min-width:0}
+.tscroll{display:grid;gap:4px;max-height:520px;overflow-y:auto}
+.trow{text-align:start;border:1px solid transparent;background:transparent;border-radius:10px;padding:9px 10px;display:grid;gap:2px;min-width:0}
+.trow:hover{background:var(--surface-2)}
+.trow.on{background:var(--accent-soft);border-color:var(--accent)}
+.udot{width:9px;height:9px;border-radius:50%;background:var(--bad);flex:none}
+.tpane{display:grid;gap:10px;align-content:start;min-width:0}
+.tpane .chatLog{max-height:460px;min-height:300px}
+.backBtn{display:none}
+@media (max-width:760px){.msgGrid{grid-template-columns:1fr}.tlist{border:0;padding:0}.msgGrid.hasSel .tlist{display:none}.msgGrid:not(.hasSel) .tpane{display:none}.backBtn{display:inline-flex}}
+.authBrand{display:grid;justify-items:center;text-align:center;gap:6px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.authBrand img,.authBrand .mark{width:72px;height:72px;border-radius:18px;object-fit:contain}
+.authBrand img{background:var(--surface-2)}
+.authBrand .nm{font-family:var(--f-display);font-size:20px;font-weight:600;line-height:1.3;text-wrap:balance}
+.authBrand .sb{color:var(--muted);font-size:14px}
+.foot{border-top:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:12.5px}
+.foot .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;padding-block:16px calc(16px + env(safe-area-inset-bottom,0px))}
+.foot span:first-child{font-weight:600;color:var(--fg)}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.prof summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between}
+.prof summary::-webkit-details-marker{display:none}
+.prof summary::after{content:"+";font-size:20px;color:var(--muted)}
+.prof[open] summary::after{content:"–"}
+.prof summary h2{margin:0}
+.dot{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--bad);color:var(--surface);font-size:11px;font-weight:700;margin-inline-start:4px}
+.msg{display:grid;gap:6px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.msg.unread{border-color:var(--accent);background:var(--accent-soft);cursor:pointer}
+.pickZones{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.pz{display:flex;justify-content:space-between;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px;text-align:start}
+.pz[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.pz:disabled{opacity:.45;cursor:not-allowed}
+.chip:disabled{opacity:.45}
+details summary{list-style-position:inside}
+.signbar{gap:8px;padding:10px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
+.srow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.pwrow{display:flex;flex-wrap:wrap;gap:8px;width:100%}
+.pwrow input{flex:1 1 180px;background:var(--surface)}
+.addStaff{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end;padding-top:12px;border-top:1px solid var(--line)}
+.savebar{position:sticky;bottom:0;z-index:4;background:var(--surface);border-top:1px solid var(--line);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-block:12px calc(12px + env(safe-area-inset-bottom,0px))}
+@media (max-width:860px){.zrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.zrow .iconPick{grid-column:1/-1}.zrow .rm{justify-self:start}}
+@media (max-width:520px){.zrow{grid-template-columns:1fr}.crow{grid-template-columns:1fr}.crow .rm{justify-self:start}}
+@media (prefers-reduced-motion:no-preference){.zone,.chip,.btn{transition:border-color .15s,background .15s}}
+</style>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const {useState,useEffect,useMemo,useRef,useCallback}=React;
+const html=htm.bind(React.createElement);
+
+/* ---------- Domain ---------- */
+const DEFAULT_CFG={
+  name:{ar:'مركز الترفيه الطلابي',en:'Campus Recreation Center'},
+  logo:'',
+  sections:[
+    {id:'ps',icon:'ps',cap:10,ar:'بلايستيشن',en:'PlayStation'},
+    {id:'billiards',icon:'billiards',cap:20,ar:'البلياردو',en:'Billiards'},
+    {id:'tt',icon:'tt',cap:4,ar:'تنس الطاولة',en:'Table Tennis'},
+    {id:'carrom',icon:'carrom',cap:4,ar:'الكيرم',en:'Carrom'},
+    {id:'foosball',icon:'foosball',cap:2,ar:'كرة الطاولة (فوسبول)',en:'Foosball'},
+    {id:'cards',icon:'cards',cap:5,ar:'ألعاب الورق',en:'Solitaire / Cards'},
+    {id:'other',icon:'other',cap:5,ar:'ألعاب أخرى',en:'Other Games'},
+  ],
+  slots:[
+    {id:1,shift:'m',s:'07:30',e:'08:30'},{id:2,shift:'m',s:'08:30',e:'09:30'},
+    {id:3,shift:'m',s:'09:30',e:'10:30'},{id:4,shift:'m',s:'10:30',e:'11:30'},
+    {id:5,shift:'e',s:'16:30',e:'17:30'},{id:6,shift:'e',s:'17:30',e:'18:30'},
+    {id:7,shift:'e',s:'18:30',e:'19:30'},{id:8,shift:'e',s:'19:30',e:'20:30'},
+  ],
+  weeklyOff:[],          // 0=Sun … 6=Sat
+  closed:[],             // [{date:'YYYY-MM-DD', reason:'…'}]
+};
+// Live config (replaced whenever the shared settings change)
+let CFG=DEFAULT_CFG, SECTIONS=CFG.sections, SLOTS=CFG.slots, TOTAL=0;
+function normCfg(c){
+  c=c||{};
+  const out={...DEFAULT_CFG,...c,name:{...DEFAULT_CFG.name,...(c.name||{})}};
+  out.sections=Array.isArray(c.sections)&&c.sections.length?c.sections:DEFAULT_CFG.sections;
+  out.slots=(Array.isArray(c.slots)&&c.slots.length?c.slots:DEFAULT_CFG.slots).slice().sort((a,b)=>toMin(a.s)-toMin(b.s));
+  out.weeklyOff=Array.isArray(c.weeklyOff)?c.weeklyOff:[];
+  out.closed=Array.isArray(c.closed)?c.closed:[];
+  return out;
+}
+function applyCfg(c){CFG=normCfg(c);SECTIONS=CFG.sections;SLOTS=CFG.slots;TOTAL=SECTIONS.reduce((a,s)=>a+(+s.cap||0),0);return CFG}
+function closedInfo(iso){
+  const hit=CFG.closed.find(x=>x.date===iso);if(hit) return {reason:hit.reason||''};
+  const wd=new Date(iso+'T12:00:00').getDay();if(CFG.weeklyOff.includes(wd)) return {reason:'',weekly:true};
+  return null;
+}
+const LATE_MIN=10;
+const toMin=t=>{const [h,m]=String(t).split(':').map(Number);return h*60+m};
+const pad=n=>String(n).padStart(2,'0');
+const isoOf=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayISO=()=>isoOf(new Date());
+const nowMin=()=>{const d=new Date();return d.getHours()*60+d.getMinutes()};
+const slotById=id=>SLOTS.find(s=>s.id===id)||{id,shift:'m',s:'00:00',e:'00:00',gone:true};
+const secById=id=>SECTIONS.find(s=>s.id===id)||{id,icon:'other',cap:0,ar:id,en:id,gone:true};
+applyCfg(DEFAULT_CFG);
+
+// 'past' = booking window closed (10 min after start) ; 'live' = in progress ; 'ended' ; 'future'
+function slotPhase(date,slot,tick){
+  const t=todayISO();
+  if(date<t) return 'ended';
+  if(date>t) return 'future';
+  const n=nowMin(), s=toMin(slot.s), e=toMin(slot.e);
+  if(n>=e) return 'ended';
+  if(n>=s) return n>=s+LATE_MIN?'closing':'live';
+  return 'future';
+}
+const canBookSlot=(date,slot)=>{if(slot.gone||closedInfo(date)) return false;const p=slotPhase(date,slot);return p==='future'||p==='live'};
+
+function effStatus(b,desk){
+  if(!b) return null;
+  if(b.status==='cancelled') return 'cancelled';
+  if(desk && desk.code===b.code) return desk.status;
+  return b.status||'booked';
+}
+const occupies=st=>st==='booked'||st==='checked-in';
+function ticketBadge(b,desk){
+  const st=effStatus(b,desk);
+  if(st==='booked'){const sl=slotById(b.slotId);if(slotPhase(b.date,sl)==='ended') return 'expired';return 'active'}
+  return st; // checked-in | cancelled | no-show
+}
+function makeCode(date){
+  const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let r='';
+  const buf=new Uint32Array(4);(crypto&&crypto.getRandomValues)?crypto.getRandomValues(buf):buf.forEach((_,i)=>buf[i]=Math.random()*1e9);
+  buf.forEach(v=>r+=A[v%A.length]);
+  return `CRC-${date.slice(0,4)}-${r}`;
+}
+
+/* ---------- i18n ---------- */
+const T={
+ ar:{dir:'rtl',brand:'مركز الترفيه الطلابي',brandSub:'حجز الساعات والألعاب',student:'بوابة الطالب',desk:'مكتب الاستقبال',
+  date:'اليوم',shift:'الفترة',morning:'الفترة الصباحية',evening:'الفترة المسائية',hour:'الساعة',
+  seatsLeft:'مقعد متاح',of:'من',available:'متاح',limited:'محدود',full:'مكتمل',closed:'مغلق',
+  pickZone:'اختر قسماً لحجز ساعتك',ruleNote:'ساعة واحدة لكل رقم جامعي في اليوم. أحضر بطاقتك الجامعية؛ يطابقها المشرف مع التذكرة عند الدخول.',
+  bookTitle:'تأكيد الحجز',fullName:'الاسم الكامل',studentId:'الرقم الجامعي',idHint:'أرقام فقط، كما هو مطبوع على بطاقتك',
+  confirm:'احجز الساعة',cancel:'إلغاء',close:'إغلاق',booking:'جارٍ الحجز…',
+  errName:'اكتب اسمك الكامل (كلمتان على الأقل).',errId:'الرقم الجامعي يجب أن يكون من 4 إلى 12 رقماً.',
+  errDup:'هذا الرقم الجامعي لديه حجز في هذا اليوم بالفعل. المسموح ساعة واحدة يومياً.',
+  errFull:'امتلأ هذا القسم للتو. اختر قسماً أو ساعة أخرى.',errClosed:'انتهى وقت الحجز لهذه الساعة.',
+  errBusy:'يتم حجز هذا الرقم الآن من جهاز آخر. حاول بعد ثوانٍ.',errPerm:'يمكنك عرض الأماكن فقط ولا تملك صلاحية الحجز. اطلب من إدارة المركز صلاحية "مساهم".',
+  errGeneric:'تعذّر حفظ الحجز. تحقق من الاتصال وحاول مجدداً.',
+  ticket:'التذكرة الرقمية',ticketCode:'رقم التذكرة',name:'الاسم',section:'القسم',time:'الوقت',
+  st_active:'نشطة',st_expired:'منتهية','st_checked-in':'تم الدخول',st_cancelled:'ملغاة','st_no-show':'لم يحضر',st_booked:'محجوز',
+  copy:'نسخ الرقم',copied:'تم نسخ رقم التذكرة',save:'حفظ التذكرة كصورة',saved:'تم حفظ التذكرة',cancelMine:'إلغاء حجزي',
+  cancelAsk:'إلغاء هذا الحجز وإتاحة المقعد لغيرك؟',yesCancel:'نعم، ألغِ الحجز',keep:'لا، أبقِه',cancelledToast:'تم إلغاء الحجز',
+  showAtDesk:'اعرض هذه التذكرة مع بطاقتك الجامعية في مكتب الاستقبال. يُلغى الحجز تلقائياً بعد 10 دقائق تأخير.',
+  myPasses:'تذاكري على هذا الجهاز',noPasses:'لا توجد تذاكر محفوظة على هذا الجهاز بعد.',open:'عرض',
+  findTicket:'استرجاع تذكرة',findHint:'أدخل رقمك الجامعي لعرض تذكرتك في اليوم المحدد.',find:'بحث',notFound:'لا يوجد حجز بهذا الرقم في هذا اليوم.',
+  occNow:'الإشغال',seatsOcc:'مقعد مشغول',free:'متاح',booked:'محجوز',checkedIn:'حضر',
+  search:'ابحث بالاسم أو الرقم الجامعي أو رقم التذكرة',allSections:'كل الأقسام',slot:'الساعة',
+  checkIn:'تسجيل دخول',noShow:'لم يحضر',undo:'تراجع',late:'متأخر',
+  roster:'حجوزات الساعة',none:'لا توجد حجوزات لهذه الساعة.',
+  shared:'متصل: الحجوزات مشتركة ومباشرة بين جميع الأجهزة.',demo:'وضع تجريبي: الحجوزات محفوظة على هذا الجهاز فقط ولن تصل إلى مكتب الاستقبال.',
+  demoB:'وضع تجريبي',liveB:'مباشر',deskOnly:'لوحة المكتب متاحة لمحرري الصفحة فقط.',
+  now:'الآن',am:'ص',pm:'م',today:'اليوم',tomorrow:'غداً',seat:'مقعد',
+  colTicket:'التذكرة',colStudent:'الطالب',colSection:'القسم',colStatus:'الحالة',
+  noshowToast:'تم تحرير المقعد',checkinToast:'تم تسجيل الدخول',dailyNote:'حد يومي: ساعة واحدة',
+  settings:'الإعدادات',identity:'هوية المركز',nameAr:'الاسم بالعربية',nameEn:'الاسم بالإنجليزية',logo:'الشعار',uploadLogo:'رفع شعار',removeLogo:'إزالة الشعار',logoHint:'PNG أو JPG أو SVG، يُصغَّر تلقائياً إلى 160 بكسل.',
+  zones:'الأقسام والسعة',zoneAr:'الاسم بالعربية',zoneEn:'الاسم بالإنجليزية',capacity:'السعة',icon:'الأيقونة',addZone:'إضافة قسم',remove:'حذف',totalCap:'السعة الإجمالية في الساعة',
+  hours:'الساعات المتاحة',from:'من',to:'إلى',addHour:'إضافة ساعة',
+  closedDays:'أيام الإغلاق',weeklyOff:'إجازة أسبوعية ثابتة',specificDays:'أيام محددة (إجازة أو حجز خاص)',reason:'السبب',reasonPh:'مثال: إجازة اليوم الوطني',addDay:'إضافة يوم',noClosed:'لا توجد أيام إغلاق محددة.',
+  saveSettings:'حفظ الإعدادات',savedSettings:'تم حفظ الإعدادات',discard:'تجاهل التعديلات',unsaved:'لديك تعديلات غير محفوظة',resetDefaults:'استعادة الإعدادات الأصلية',
+  vZoneName:'كل قسم يحتاج اسماً بالعربية والإنجليزية.',vCap:'السعة يجب أن تكون بين 1 و 200.',vNoZone:'أضف قسماً واحداً على الأقل.',vNoHour:'أضف ساعة واحدة على الأقل.',vHour:'وقت النهاية يجب أن يكون بعد وقت البداية.',vOverlap:'توجد ساعات متداخلة:',vDate:'اختر تاريخاً لكل يوم إغلاق.',vName:'اكتب اسم المركز باللغتين.',
+  closedToday:'المركز مغلق في هذا اليوم',closedWeekly:'إجازة أسبوعية',closedB:'مغلق',hasBookings:'حجوزات قائمة',bookingsWarn:'تنبيه: يوجد حجوزات في هذا اليوم المغلق. راجعها من مكتب الاستقبال.',
+  noHoursShift:'لا توجد ساعات في هذه الفترة.',errClosedDay:'المركز مغلق في هذا اليوم.',morningS:'صباحية',eveningS:'مسائية',
+  wd:['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'],
+  staff:'حسابات الإدارة',staffHint:'كل موظف يدخل إلى صفحة الإدارة باسم مستخدم وكلمة مرور وصلاحية يحددها مدير النظام. تُحفظ كلمات المرور مشفّرة.',username:'اسم المستخدم',displayName:'الاسم الظاهر',password:'كلمة المرور',confirmPw:'تأكيد كلمة المرور',addStaff:'إضافة حساب',
+  newPw:'كلمة مرور جديدة',setPw:'تعيين كلمة المرور',resetPw:'تغيير كلمة المرور',active:'مفعّل',disabled:'موقوف',enable:'تفعيل',disable:'إيقاف',noStaff:'لا توجد حسابات بعد.',
+  vUser:'اسم المستخدم من 3 إلى 24 حرفاً إنجليزياً أو رقماً أو (. _ -).',vUserDup:'اسم المستخدم مستخدم بالفعل.',vPw:'كلمة المرور 8 أحرف على الأقل.',vPwMatch:'كلمتا المرور غير متطابقتين.',vDisp:'اكتب الاسم الظاهر.',
+  staffSaved:'تم حفظ الحساب',staffRemoved:'تم حذف الحساب',removeAsk:'حذف هذا الحساب نهائياً؟',
+  login:'تسجيل الدخول',loginTitle:'دخول الإدارة',loginHint:'استخدم الحساب الذي أنشأه لك مدير النظام.',signIn:'دخول',signOut:'خروج',signedAs:'مسجّل باسم',
+  badLogin:'اسم المستخدم أو كلمة المرور غير صحيحة.',locked:'محاولات كثيرة. حاول بعد {s} ثانية.',noAccounts:'لم يُنشأ أي حساب للإدارة بعد. يُنشئها مدير النظام.',
+  ownerBypass:'أنت مالك الصفحة ولا يوجد حساب مدير نظام بعد، لذا فُتحت الإدارة لك مباشرة. ابدأ بإنشاء حساب مدير نظام لنفسك من الإعدادات، ثم حسابات الموظفين.',ownerOnly:'الإعدادات متاحة لمالك الصفحة فقط.',by:'بواسطة',
+  msgTab:'الرسائل',chatTitle:'المراسلة مع الإدارة',chatHint:'اكتب استفسارك وسيرد عليك أحد الموظفين هنا.',chatPh:'اكتب رسالة…',you2:'أنت',staffLbl:'الإدارة',
+  convos:'المحادثات',newConvo:'محادثة جديدة',sidPh:'الرقم الجامعي',open2:'فتح',noConvos:'لا توجد محادثات بعد.',pickConvo:'اختر محادثة أو ابدأ واحدة جديدة.',
+  notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
+  manage:'الإدارة',sysAdmin:'مدير النظام',rights:'جميع الحقوق محفوظة لدى Services Squire LLC.',deskTab:'الاستقبال',settingsTab:'الإعدادات',
+  role:'الصلاحية',roleStaff:'موظف استقبال',roleAdmin:'مدير النظام',roleStaffD:'الاستقبال فقط: الحضور والرسائل والتقارير',roleAdminD:'كل شيء: الاستقبال والإعدادات والحسابات',
+  lastAdmin:'لا يمكن إيقاف أو حذف أو تخفيض آخر مدير نظام مفعّل.',makeAdmin:'جعله مدير نظام',makeStaff:'جعله موظفاً',you:'أنت',
+  myAccount:'حسابي',createAcc:'إنشاء حساب طالب',haveAcc:'لديّ حساب',newAcc:'حساب جديد',signInStu:'دخول الطالب',
+  accHint:'اسم المستخدم هو رقمك الجامعي. ستحتاج كلمة المرور لإدارة حجوزاتك ورسائلك.',accNeeded:'سجّل دخولك أو أنشئ حساباً لإكمال الحجز.',
+  college:'الكلية / التخصص',phone:'رقم الهاتف',optional:'اختياري',register:'إنشاء الحساب',
+  sidTaken:'هذا الرقم الجامعي مسجّل بحساب آخر. إن كان رقمك فراجع إدارة المركز.',accExists:'لديك حساب بالفعل على هذا الجهاز/الحساب برقم {sid}. سجّل الدخول به.',
+  noAccHere:'لا يوجد حساب بهذا الرقم الجامعي على حسابك الحالي في Claude.',
+  forgot:'نسيت كلمة المرور؟',forgotText:'لا يمكن استعادة كلمة المرور من الصفحة. توجّه إلى إدارة المركز ومعك بطاقتك الجامعية لتحصل على كلمة مرور مؤقتة.',
+  mustChangeT:'غيّر كلمة المرور المؤقتة',mustChangeH:'أصدرت لك إدارة المركز كلمة مرور مؤقتة. اختر كلمة مرور جديدة للمتابعة.',
+  welcome:'مرحباً',myBookings:'حجوزاتي',noBookings:'لا توجد حجوزات قادمة.',past:'السابقة',editBooking:'تعديل الحجز',editHint:'يمكنك تغيير الساعة أو القسم في اليوم نفسه. لتغيير اليوم ألغِ الحجز واحجز من جديد.',
+  saveChanges:'حفظ التعديل',bookingUpdated:'تم تعديل الحجز',viewPass:'عرض التذكرة',
+  messages:'الرسائل',noMessages:'لا توجد رسائل.',markAllRead:'تعليم الكل كمقروء',newBadge:'جديدة',fromDesk:'من',
+  profile:'بياناتي',saveProfile:'حفظ البيانات',profileSaved:'تم حفظ البيانات',changePw:'تغيير كلمة المرور',currentPw:'كلمة المرور الحالية',pwChanged:'تم تغيير كلمة المرور',wrongCurrent:'كلمة المرور الحالية غير صحيحة.',
+  sendMsg:'رسالة',msgTitle:'إرسال رسالة للطالب',msgAll:'رسالة لكل طلاب هذه الساعة',msgTo:'إلى',msgPh:'اكتب رسالتك…',send:'إرسال',msgSent:'تم إرسال الرسالة',msgSentN:'تم إرسال {n} رسالة',noAccMsg:'هذا الحجز بلا حساب طالب',
+  stuAccounts:'حسابات الطلاب',stuAccHint:'إذا نسي الطالب كلمة المرور، تحقّق من بطاقته الجامعية ثم أصدر له كلمة مرور مؤقتة. سيُطلب منه تغييرها عند الدخول.',
+  findSid:'ابحث برقم جامعي أو اسم',issuePw:'إصدار كلمة مرور مؤقتة',tempPw:'كلمة المرور المؤقتة',tempPwNote:'أعطها للطالب الآن؛ لن تظهر مرة أخرى.',copyPw:'نسخ',registered:'تاريخ التسجيل',noStudents:'لا يوجد طلاب مطابقون.',loadAcc:'عرض الحسابات',
+  exportBtn:'تصدير / طباعة',exportTitle:'تصدير تقرير الحجوزات',period:'الفترة',wholeDay:'اليوم كاملاً',includeCancelled:'تضمين الحجوزات الملغاة',
+  pdf:'تنزيل PDF',csv:'تنزيل Excel (CSV)',exporting:'جارٍ إنشاء الملف…',exported:'تم حفظ الملف',exportFail:'تعذّر إنشاء الملف. حاول مرة أخرى.',exportDeclined:'لم يُحفظ الملف.',
+  rptTitle:'تقرير حجوزات المركز',rptDay:'اليوم',rptDate:'التاريخ',rptPeriod:'الفترة',rptGenerated:'تاريخ الإنشاء',rptSummary:'ملخص',rptTotal:'إجمالي الحجوزات',rptAttended:'حضر',rptPending:'محجوز/منتهي',rptByZone:'حسب القسم',rptSeats:'المقاعد المتاحة',rptList:'قائمة الحجوزات',rptPage:'صفحة',rptSign:'توقيع المشرف',rptNone:'لا توجد حجوزات في هذه الفترة.',rptNo:'#',rptRate:'نسبة الإشغال',exportCount:'حجز سيُضمَّن',
+ },
+ en:{dir:'ltr',brand:'Campus Recreation Center',brandSub:'Hour & game booking',student:'Student portal',desk:'Reception desk',
+  date:'Day',shift:'Shift',morning:'Morning shift',evening:'Evening shift',hour:'Hour',
+  seatsLeft:'seats left',of:'of',available:'Available',limited:'Limited',full:'Full',closed:'Closed',
+  pickZone:'Pick a zone to book your hour',ruleNote:'One hour per student ID per day. Bring your university ID card; the desk supervisor matches it to your ticket.',
+  bookTitle:'Confirm booking',fullName:'Full name',studentId:'Student ID',idHint:'Digits only, as printed on your card',
+  confirm:'Book this hour',cancel:'Cancel',close:'Close',booking:'Booking…',
+  errName:'Enter your full name (at least two words).',errId:'Student ID must be 4 to 12 digits.',
+  errDup:'This student ID already has a booking on this day. The limit is one hour per day.',
+  errFull:'This zone just filled up. Pick another zone or hour.',errClosed:'Booking for this hour has closed.',
+  errBusy:'This ID is being booked from another device right now. Try again in a few seconds.',errPerm:'You can view seats but don’t have permission to book. Ask the center for Contributor access.',
+  errGeneric:'Couldn’t save the booking. Check your connection and try again.',
+  ticket:'Digital pass',ticketCode:'Ticket code',name:'Name',section:'Zone',time:'Time',
+  st_active:'Active',st_expired:'Expired','st_checked-in':'Checked in',st_cancelled:'Cancelled','st_no-show':'No-show',st_booked:'Booked',
+  copy:'Copy code',copied:'Ticket code copied',save:'Save pass as image',saved:'Pass saved',cancelMine:'Cancel my booking',
+  cancelAsk:'Cancel this booking and free the seat for someone else?',yesCancel:'Yes, cancel it',keep:'No, keep it',cancelledToast:'Booking cancelled',
+  showAtDesk:'Show this pass with your university ID at the desk. Bookings are released after 10 minutes late.',
+  myPasses:'My passes on this device',noPasses:'No passes saved on this device yet.',open:'Open',
+  findTicket:'Find my pass',findHint:'Enter your student ID to show your pass for the selected day.',find:'Find',notFound:'No booking for this ID on this day.',
+  occNow:'Occupancy',seatsOcc:'seats taken',free:'Free',booked:'Booked',checkedIn:'Checked in',
+  search:'Search by name, student ID or ticket code',allSections:'All zones',slot:'Hour',
+  checkIn:'Check in',noShow:'No-show',undo:'Undo',late:'Late',
+  roster:'Bookings this hour',none:'No bookings for this hour.',
+  shared:'Live: bookings are shared across all devices in real time.',demo:'Demo mode: bookings are kept on this device only and won’t reach the desk.',
+  demoB:'Demo',liveB:'Live',deskOnly:'The desk dashboard is for page editors only.',
+  now:'Now',am:'AM',pm:'PM',today:'Today',tomorrow:'Tomorrow',seat:'seat',
+  colTicket:'Ticket',colStudent:'Student',colSection:'Zone',colStatus:'Status',
+  noshowToast:'Seat released',checkinToast:'Checked in',dailyNote:'Daily limit: 1 hour',
+  settings:'Settings',identity:'Center identity',nameAr:'Name in Arabic',nameEn:'Name in English',logo:'Logo',uploadLogo:'Upload logo',removeLogo:'Remove logo',logoHint:'PNG, JPG or SVG. Resized to 160 px automatically.',
+  zones:'Zones & capacity',zoneAr:'Arabic name',zoneEn:'English name',capacity:'Capacity',icon:'Icon',addZone:'Add zone',remove:'Remove',totalCap:'Total capacity per hour',
+  hours:'Opening hours',from:'From',to:'To',addHour:'Add hour',
+  closedDays:'Closed days',weeklyOff:'Fixed weekly days off',specificDays:'Specific dates (holiday or private booking)',reason:'Reason',reasonPh:'e.g. National Day holiday',addDay:'Add date',noClosed:'No closed dates set.',
+  saveSettings:'Save settings',savedSettings:'Settings saved',discard:'Discard changes',unsaved:'You have unsaved changes',resetDefaults:'Restore original settings',
+  vZoneName:'Every zone needs an Arabic and an English name.',vCap:'Capacity must be between 1 and 200.',vNoZone:'Add at least one zone.',vNoHour:'Add at least one hour.',vHour:'End time must be after start time.',vOverlap:'These hours overlap:',vDate:'Pick a date for every closed day.',vName:'Enter the center name in both languages.',
+  closedToday:'The center is closed on this day',closedWeekly:'Weekly day off',closedB:'Closed',hasBookings:'existing bookings',bookingsWarn:'Note: this closed day already has bookings. Review them at the desk.',
+  noHoursShift:'No hours in this shift.',errClosedDay:'The center is closed on this day.',morningS:'Morning',eveningS:'Evening',
+  wd:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+  staff:'Management accounts',staffHint:'Each person signs in to Management with a username, password and a role set by the system admin. Passwords are stored hashed.',username:'Username',displayName:'Display name',password:'Password',confirmPw:'Confirm password',addStaff:'Add account',
+  newPw:'New password',setPw:'Set password',resetPw:'Change password',active:'Active',disabled:'Disabled',enable:'Enable',disable:'Disable',noStaff:'No accounts yet.',
+  vUser:'Username must be 3–24 letters, digits or . _ -',vUserDup:'That username is already taken.',vPw:'Password must be at least 8 characters.',vPwMatch:'The passwords don’t match.',vDisp:'Enter a display name.',
+  staffSaved:'Account saved',staffRemoved:'Account removed',removeAsk:'Remove this account permanently?',
+  login:'Sign in',loginTitle:'Management sign-in',loginHint:'Use the account the system admin created for you.',signIn:'Sign in',signOut:'Sign out',signedAs:'Signed in as',
+  badLogin:'Wrong username or password.',locked:'Too many attempts. Try again in {s} seconds.',noAccounts:'No management accounts exist yet. The system admin creates them.',
+  ownerBypass:'You own this page and no system admin account exists yet, so Management is open to you. Start by creating a system admin account for yourself in Settings, then staff accounts.',ownerOnly:'Settings are for the page owner only.',by:'by',
+  msgTab:'Messages',chatTitle:'Messages with the center',chatHint:'Write your question and a staff member will reply here.',chatPh:'Write a message…',you2:'You',staffLbl:'Center staff',
+  convos:'Conversations',newConvo:'New conversation',sidPh:'Student ID',open2:'Open',noConvos:'No conversations yet.',pickConvo:'Pick a conversation or start a new one.',
+  notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
+  manage:'Management',sysAdmin:'System admin',rights:'All rights reserved by Services Squire LLC.',deskTab:'Reception',settingsTab:'Settings',
+  role:'Role',roleStaff:'Reception staff',roleAdmin:'System admin',roleStaffD:'Reception only: check-ins, messages and reports',roleAdminD:'Everything: reception, settings and accounts',
+  lastAdmin:'You can’t disable, remove or demote the last active system admin.',makeAdmin:'Make admin',makeStaff:'Make staff',you:'you',
+  myAccount:'My account',createAcc:'Create student account',haveAcc:'I have an account',newAcc:'New account',signInStu:'Student sign-in',
+  accHint:'Your username is your student ID. You’ll need the password to manage your bookings and messages.',accNeeded:'Sign in or create an account to finish booking.',
+  college:'College / major',phone:'Phone',optional:'optional',register:'Create account',
+  sidTaken:'This student ID is registered to another account. If it’s yours, contact the center management.',accExists:'You already have an account here with ID {sid}. Sign in with it.',
+  noAccHere:'No account with this student ID on your current Claude account.',
+  forgot:'Forgot your password?',forgotText:'Passwords can’t be recovered from this page. Visit the center management with your university ID card to get a temporary password.',
+  mustChangeT:'Change your temporary password',mustChangeH:'The center management issued you a temporary password. Choose a new one to continue.',
+  welcome:'Welcome',myBookings:'My bookings',noBookings:'No upcoming bookings.',past:'Past',editBooking:'Edit booking',editHint:'You can change the hour or zone on the same day. To change the day, cancel and book again.',
+  saveChanges:'Save changes',bookingUpdated:'Booking updated',viewPass:'View pass',
+  messages:'Messages',noMessages:'No messages.',markAllRead:'Mark all as read',newBadge:'New',fromDesk:'From',
+  profile:'My details',saveProfile:'Save details',profileSaved:'Details saved',changePw:'Change password',currentPw:'Current password',pwChanged:'Password changed',wrongCurrent:'The current password is wrong.',
+  sendMsg:'Message',msgTitle:'Send a message to the student',msgAll:'Message everyone this hour',msgTo:'To',msgPh:'Write your message…',send:'Send',msgSent:'Message sent',msgSentN:'{n} messages sent',noAccMsg:'This booking has no student account',
+  stuAccounts:'Student accounts',stuAccHint:'If a student forgets their password, check their university ID card, then issue a temporary password. They’ll be asked to change it when they sign in.',
+  findSid:'Search by student ID or name',issuePw:'Issue temporary password',tempPw:'Temporary password',tempPwNote:'Give it to the student now; it won’t be shown again.',copyPw:'Copy',registered:'Registered',noStudents:'No matching students.',loadAcc:'Show accounts',
+  exportBtn:'Export / Print',exportTitle:'Export bookings report',period:'Period',wholeDay:'Whole day',includeCancelled:'Include cancelled bookings',
+  pdf:'Download PDF',csv:'Download Excel (CSV)',exporting:'Creating file…',exported:'File saved',exportFail:'Couldn’t create the file. Try again.',exportDeclined:'The file wasn’t saved.',
+  rptTitle:'Center bookings report',rptDay:'Day',rptDate:'Date',rptPeriod:'Period',rptGenerated:'Generated',rptSummary:'Summary',rptTotal:'Total bookings',rptAttended:'Checked in',rptPending:'Booked / expired',rptByZone:'By zone',rptSeats:'Seats offered',rptList:'Bookings',rptPage:'Page',rptSign:'Supervisor signature',rptNone:'No bookings in this period.',rptNo:'#',rptRate:'Occupancy',exportCount:'bookings will be included',
+ }
+};
+function fmtTime(t,L){const [h,m]=t.split(':').map(Number);const h12=((h+11)%12)+1;return `${pad(h12)}:${pad(m)}`}
+function slotLabel(sl,L){const ap=toMin(sl.s)<720?L.am:L.pm;return `${fmtTime(sl.s)}–${fmtTime(sl.e)} ${ap}`}
+function dayLabel(iso,lang){const d=new Date(iso+'T12:00:00');return d.toLocaleDateString(lang==='ar'?'ar-OM':'en-GB',{weekday:'short'})}
+function longDate(iso,lang){const d=new Date(iso+'T12:00:00');return d.toLocaleDateString(lang==='ar'?'ar-OM-u-nu-latn':'en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+
+/* ---------- Storage helpers ---------- */
+const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- Stores ---------- */
+function makeLocalStore(){
+  const KEY='crc.demo.v1';
+  let st=ls.get(KEY,{bookings:{},desk:{}});
+  const subs=new Set();
+  const save=()=>{ls.set(KEY,st);subs.forEach(f=>f())};
+  const byDate=(o,date)=>Object.fromEntries(Object.entries(o).filter(([k,v])=>v.date===date));
+  try{window.addEventListener('storage',e=>{if(e.key===KEY){st=ls.get(KEY,st);subs.forEach(f=>f())}})}catch(e){}
+  return{
+    mode:'local',
+    subscribe(date,cb){const f=()=>cb(byDate(st.bookings,date),byDate(st.desk,date),true);subs.add(f);f();return()=>subs.delete(f)},
+    async fetchDay(date){return{b:byDate(st.bookings,date),d:byDate(st.desk,date)}},
+    async claim(id,data){
+      const ex=st.bookings[id];
+      if(ex&&effStatus(ex,st.desk[id])!=='cancelled') return{ok:false,reason:'dup'};
+      const cnt=Object.entries(byDate(st.bookings,data.date)).filter(([k,b])=>b.slotId===data.slotId&&b.section===data.section&&occupies(effStatus(b,st.desk[k]))).length;
+      if(cnt>=secById(data.section).cap) return{ok:false,reason:'full'};
+      st.bookings[id]=data;save();return{ok:true};
+    },
+    async cancelBooking(id){if(st.bookings[id]){st.bookings[id]={...st.bookings[id],status:'cancelled'};save()}},
+    async setDesk(id,v){st.desk[id]=v;save()},
+    async clearDesk(id){delete st.desk[id];save()},
+    async getOne(id){return{b:st.bookings[id]||null,d:st.desk[id]||null}},
+    subscribeConfig(cb){const f=()=>cb(st.cfg||null);subs.add(f);f();return()=>subs.delete(f)},
+    async saveConfig(c){st.cfg=c;save()},
+    subscribeStaff(cb){const f=()=>cb((st.staff&&st.staff.users)||[]);subs.add(f);f();return()=>subs.delete(f)},
+    async saveStaff(users){st.staff={users};save()},
+    // student accounts
+    watchAccount(uid,cb){const f=()=>cb(((st.accounts||{})[uid])||null);subs.add(f);f();return()=>subs.delete(f)},
+    async saveAccount(uid,a){st.accounts={...(st.accounts||{}),[uid]:a};save()},
+    async claimSid(sid,uid){const o=(st.sids||{})[sid];if(o&&o.uid!==uid) return false;st.sids={...(st.sids||{}),[sid]:{uid,at:Date.now()}};save();return true},
+    async accountBySid(sid){const s=(st.sids||{})[sid];return s?{uid:s.uid,...((st.accounts||{})[s.uid]||{})}:null},
+    watchMessages(uid,cb){const f=()=>{const m=((st.msgs||{})[uid])||{};cb(Object.entries(m).map(([id,x])=>({id,...x})).sort((a,b)=>b.at-a.at))};subs.add(f);f();return()=>subs.delete(f)},
+    async sendMessage(uid,msg,meta){
+      const all=st.msgs||{};const id='m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);st.msgs={...all,[uid]:{...(all[uid]||{}),[id]:msg}};
+      const th=(st.threads||{})[uid]||{uid,staffSeenAt:0};
+      const patch={sid:(meta&&meta.sid)||th.sid||'',name:(meta&&meta.name)||th.name||'',lastAt:msg.at,lastText:String(msg.text).slice(0,140),lastFrom:msg.from||'staff'};
+      if(msg.from!=='student') patch.staffSeenAt=msg.at;
+      st.threads={...(st.threads||{}),[uid]:{...th,...patch}};save();
+    },
+    watchThreads(cb){const f=()=>cb(Object.entries(st.threads||{}).map(([uid,t])=>({...t,uid})).sort((a,b)=>b.lastAt-a.lastAt));subs.add(f);f();return()=>subs.delete(f)},
+    async markThreadSeen(uid){const t=(st.threads||{})[uid];if(t){st.threads[uid]={...t,staffSeenAt:Date.now()};save()}},
+    async markRead(uid,id){const m=(st.msgs||{})[uid];if(m&&m[id]){m[id]={...m[id],read:true};save()}},
+    async adminResetPassword(uid,salt,hash){const a=(st.accounts||{})[uid];if(a){st.accounts[uid]={...a,salt,hash,mustChange:true,resetAt:Date.now()};save()}},
+    async listAccounts(){return Object.entries(st.accounts||{}).map(([uid,a])=>({uid,...a}))},
+    watchMyBookings(sid,cb){const f=()=>{const b={},d={};Object.entries(st.bookings).forEach(([k,x])=>{if(x.studentId===sid){b[k]=x;if(st.desk[k])d[k]=st.desk[k]}});cb(b,d)};subs.add(f);f();return()=>subs.delete(f)},
+    async moveBooking(id,patch){
+      const x=st.bookings[id];if(!x) return{ok:false,reason:'gone'};
+      const cnt=Object.entries(byDate(st.bookings,x.date)).filter(([k,b])=>k!==id&&b.slotId===patch.slotId&&b.section===patch.section&&occupies(effStatus(b,st.desk[k]))).length;
+      if(cnt>=secById(patch.section).cap) return{ok:false,reason:'full'};
+      st.bookings[id]={...x,...patch,editedAt:Date.now()};save();return{ok:true};
+    },
+  };
+}
+function makeDbStore(db){
+  const toMap=s=>{const o={};s.docs.forEach(x=>{if(x.exists)o[x.id]=x.data()});return o};
+  return{
+    mode:'shared',
+    subscribe(date,cb){
+      let b={},d={},gb=false;
+      const u1=db.collection('bookings').where('date','==',date).onSnapshot(s=>{b=toMap(s);gb=true;cb(b,d,true)},e=>console.warn(e));
+      const u2=db.collection('desk').where('date','==',date).onSnapshot(s=>{d=toMap(s);if(gb)cb(b,d,true)},e=>console.warn(e));
+      return()=>{u1();u2()};
+    },
+    async fetchDay(date){
+      const [bs,ds]=await Promise.all([db.collection('bookings').where('date','==',date).get(),db.collection('desk').where('date','==',date).get()]);
+      return{b:toMap(bs),d:toMap(ds)};
+    },
+    async claim(id,data){
+      const ref=db.doc('bookings/'+id);
+      const lease=await ref.acquire({holder:data.code,ttlMs:6000});
+      if(!lease.acquired) return{ok:false,reason:'busy'};
+      const {b,d}=await this.fetchDay(data.date);
+      if(b[id]&&effStatus(b[id],d[id])!=='cancelled') return{ok:false,reason:'dup'};
+      const cnt=Object.entries(b).filter(([k,x])=>x.slotId===data.slotId&&x.section===data.section&&occupies(effStatus(x,d[k]))).length;
+      if(cnt>=secById(data.section).cap) return{ok:false,reason:'full'};
+      await ref.set(data);
+      return{ok:true};
+    },
+    async cancelBooking(id){await db.doc('bookings/'+id).update({status:'cancelled',cancelledAt:Date.now()})},
+    async setDesk(id,v){await db.doc('desk/'+id).set(v)},
+    async clearDesk(id){await db.doc('desk/'+id).delete()},
+    async getOne(id){const [b,d]=await Promise.all([db.doc('bookings/'+id).get(),db.doc('desk/'+id).get()]);return{b:b.exists?b.data():null,d:d.exists?d.data():null}},
+    subscribeConfig(cb){return db.doc('config/main').onSnapshot(s=>cb(s.exists?s.data():null),e=>{console.warn(e);cb(null)})},
+    async saveConfig(c){await db.doc('config/main').set(c)},
+    subscribeStaff(cb){return db.doc('staff/accounts').onSnapshot(s=>cb(s.exists&&Array.isArray(s.data().users)?s.data().users:[]),e=>{console.warn(e);cb([])})},
+    async saveStaff(users){await db.doc('staff/accounts').set({users,updatedAt:Date.now()})},
+    // student accounts live in each viewer's own subtree: accounts/<platform uid>
+    watchAccount(uid,cb){return db.doc('accounts/'+uid).onSnapshot(s=>cb(s.exists?s.data():null),e=>{console.warn(e);cb(null)})},
+    async saveAccount(uid,a){await db.doc('accounts/'+uid).set(a)},
+    async claimSid(sid,uid){
+      const ref=db.doc('sids/'+sid);
+      const lease=await ref.acquire({holder:uid,ttlMs:5000});if(!lease.acquired) return false;
+      const s=await ref.get();if(s.exists&&s.data().uid&&s.data().uid!==uid) return false;
+      await ref.set({uid,at:Date.now()});return true;
+    },
+    async accountBySid(sid){const s=await db.doc('sids/'+sid).get();if(!s.exists) return null;const uid=s.data().uid;const a=await db.doc('accounts/'+uid).get();return{uid,...(a.exists?a.data():{})}},
+    // inbox/<uid>/msgs : staff write, the student reads and marks read
+    watchMessages(uid,cb){return db.collection('inbox/'+uid+'/msgs').orderBy('at','desc').limit(100).onSnapshot(s=>cb(s.docs.filter(x=>x.exists).map(x=>({id:x.id,...x.data()}))),e=>{console.warn(e);cb([])})},
+    // a conversation = inbox/<uid>/msgs ; threads/<uid> is the index staff browse
+    async sendMessage(uid,msg,meta){
+      await db.collection('inbox/'+uid+'/msgs').add(msg);
+      const ref=db.doc('threads/'+uid);
+      const patch={sid:(meta&&meta.sid)||'',name:(meta&&meta.name)||'',lastAt:msg.at,lastText:String(msg.text).slice(0,140),lastFrom:msg.from||'staff'};
+      if(msg.from!=='student') patch.staffSeenAt=msg.at;
+      try{const s=await ref.get();if(s.exists) await ref.update(patch);else await ref.set({uid,staffSeenAt:0,...patch})}catch(e){console.warn(e)}
+    },
+    async markRead(uid,id){await db.doc('inbox/'+uid+'/msgs/'+id).update({read:true})},
+    watchThreads(cb){return db.collection('threads').orderBy('lastAt','desc').limit(300).onSnapshot(s=>cb(s.docs.filter(x=>x.exists).map(x=>({uid:x.id,...x.data()}))),e=>{console.warn(e);cb([])})},
+    async markThreadSeen(uid){try{await db.doc('threads/'+uid).update({staffSeenAt:Date.now()})}catch(e){}},
+    // management only (rules: accounts write = owner)
+    async adminResetPassword(uid,salt,hash){await db.doc('accounts/'+uid).update({salt,hash,mustChange:true,resetAt:Date.now()})},
+    async listAccounts(){const s=await db.collection('accounts').limit(1000).get();return s.docs.filter(x=>x.exists).map(x=>({uid:x.id,...x.data()}))},
+    watchMyBookings(sid,cb){
+      let b={},d={},gb=false;
+      const u1=db.collection('bookings').where('studentId','==',sid).onSnapshot(s=>{b=toMap(s);gb=true;cb(b,d)},e=>console.warn(e));
+      const u2=db.collection('desk').where('sid','==',sid).onSnapshot(s=>{d=toMap(s);if(gb)cb(b,d)},e=>console.warn(e));
+      return()=>{u1();u2()};
+    },
+    async moveBooking(id,patch){
+      const ref=db.doc('bookings/'+id);
+      const lease=await ref.acquire({holder:id+Date.now(),ttlMs:6000});if(!lease.acquired) return{ok:false,reason:'busy'};
+      const cur=await ref.get();if(!cur.exists) return{ok:false,reason:'gone'};
+      const x=cur.data();const {b,d}=await this.fetchDay(x.date);
+      const cnt=Object.entries(b).filter(([k,y])=>k!==id&&y.slotId===patch.slotId&&y.section===patch.section&&occupies(effStatus(y,d[k]))).length;
+      if(cnt>=secById(patch.section).cap) return{ok:false,reason:'full'};
+      await ref.update({...patch,editedAt:Date.now()});return{ok:true};
+    },
+  };
+}
+
+/* ---------- Staff auth ---------- */
+const b64=buf=>btoa(String.fromCharCode(...new Uint8Array(buf)));
+function randSalt(){const a=new Uint8Array(16);crypto.getRandomValues(a);return b64(a)}
+async function hashPw(pw,salt){
+  const enc=new TextEncoder();
+  const key=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(salt),iterations:150000,hash:'SHA-256'},key,256);
+  return b64(bits);
+}
+const SESS_KEY='crc.deskSession';
+const sess={get(){try{const s=JSON.parse(sessionStorage.getItem(SESS_KEY)||'null');return s&&s.exp>Date.now()?s:null}catch(e){return null}},
+  set(v){try{sessionStorage.setItem(SESS_KEY,JSON.stringify(v))}catch(e){}},clear(){try{sessionStorage.removeItem(SESS_KEY)}catch(e){}}};
+// a session stays valid only while that account exists, is active, and its password hasn't changed
+const roleOf=u=>u&&u.role==='admin'?'admin':'staff';
+const sessionValid=(s,users)=>!!s&&users.some(u=>u.u===s.u&&u.active!==false&&u.hash.slice(0,12)===s.v);
+
+/* ---------- Icons ---------- */
+const P={stroke:'currentColor',fill:'none',strokeWidth:1.8,strokeLinecap:'round',strokeLinejoin:'round'};
+const ICONS={
+  ps:html`<svg width="22" height="22" viewBox="0 0 24 24" ...${P}><path d="M6 9h12a4 4 0 0 1 3.9 4.9l-.6 2.6A2 2 0 0 1 17.6 17L15 14H9l-2.6 3a2 2 0 0 1-3.7-.5l-.6-2.6A4 4 0 0 1 6 9z"/><path d="M7 11.5v2M6 12.5h2"/><circle cx="16.5" cy="12" r=".6" fill="currentColor"/><circle cx="18" cy="13.5" r=".6" fill="currentColor"/></svg>`,
+  billiards:html`<svg width="22" height="22" viewBox="0 0 24 24" ...${P}><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="11" r="3.2"/><path d="M11.2 10.2c0-.5.4-.8.8-.8s.8.3.8.8-.4.7-.8.7-.8.4-.8.9.4.8.8.8.8-.3.8-.8"/></svg>`,
+  tt:html`<svg width="22" height="22" viewBox="0 0 24 24" ...${P}><circle cx="9.5" cy="9.5" r="5.5"/><path d="m13.5 13.5 5.5 5.5"/><circle cx="18.5" cy="6" r="1.6"/></svg>`,
+  carrom:html`<svg width="22" height="22" viewBox="0 0 24 24" ...${P}><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><circle cx="12" cy="12" r="3"/><circle cx="6.3" cy="6.3" r=".9"/><circle cx="17.7" cy="6.3" r=".9"/><circle cx="6.3" cy="17.7" r=".9"/><circle cx="17.7" cy="17.7" r=".9"/></svg>`,
+  foosball:html`<svg width="22" height="22" viewBox="0 0 24 24" ...${P}><path d="M2.5 8h19M2.5 16h19"/><rect x="6" y="5" width="3" height="6" rx="1"/><rect x="15" y="13" width="3" height="6" rx="1"/><circle cx="12" cy="12" r="1.5"/></svg>`,
+  cards:html`<svg width="22" height="22" viewBox="0 0 24 24" ...${P}><rect x="4" y="5" width="11" height="15" rx="1.8" transform="rotate(-8 9.5 12.5)"/><rect x="9" y="4" width="11" height="15" rx="1.8"/><path d="M14.5 9.2c-.9-1.2-2.7-.4-2.2 1 .4 1.1 2.2 2.3 2.2 2.3s1.8-1.2 2.2-2.3c.5-1.4-1.3-2.2-2.2-1z"/></svg>`,
+  other:html`<svg width="22" height="22" viewBox="0 0 24 24" ...${P}><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="8.5" cy="8.5" r=".9" fill="currentColor"/><circle cx="15.5" cy="15.5" r=".9" fill="currentColor"/><circle cx="12" cy="12" r=".9" fill="currentColor"/><circle cx="15.5" cy="8.5" r=".9" fill="currentColor"/><circle cx="8.5" cy="15.5" r=".9" fill="currentColor"/></svg>`,
+};
+
+/* ---------- QR ---------- */
+function qrFor(text){try{const q=qrcode(0,'M');q.addData(text);q.make();return q}catch(e){return null}}
+function QR({text}){
+  const svg=useMemo(()=>{const q=qrFor(text);return q?q.createSvgTag({cellSize:4,margin:0,scalable:true}):''},[text]);
+  return html`<div className="qr" role="img" aria-label=${'QR '+text} dangerouslySetInnerHTML=${{__html:svg}}></div>`;
+}
+
+/* ---------- App ---------- */
+function useTick(ms){const [t,setT]=useState(0);useEffect(()=>{const i=setInterval(()=>setT(x=>x+1),ms);return()=>clearInterval(i)},[ms]);return t}
+
+function App(){
+  const [lang,setLang]=useState(()=>ls.get('crc.lang','ar'));
+  const L=T[lang];
+  useEffect(()=>{document.documentElement.lang=lang;document.documentElement.dir=L.dir;ls.set('crc.lang',lang)},[lang]);
+  const [store,setStore]=useState(null);
+  const [canDesk,setCanDesk]=useState(false);
+  const [canWrite,setCanWrite]=useState(true);
+  const [isOwner,setIsOwner]=useState(false);
+  const [staff,setStaff]=useState([]);const [staffReady,setStaffReady]=useState(false);
+  const [session,setSession]=useState(()=>sess.get());
+  const [uid,setUid]=useState(null);
+  const [acct,setAcct]=useState(null);
+  const [stuSess,setStuSess]=useState(()=>ls.get(STU_KEY,null));
+  const [msgs,setMsgs]=useState([]);
+  const [view,setView]=useState(()=>({'#manage':'manage','#desk':'manage','#settings':'manage'}[location.hash]||'student'));
+  const [toast,setToast]=useState('');
+  const tick=useTick(30000);
+  const say=useCallback(m=>{setToast(m);clearTimeout(say.t);say.t=setTimeout(()=>setToast(''),2600)},[]);
+
+  useEffect(()=>{let alive=true;(async()=>{
+    let db=null,user=null;
+    try{ if(window.claude&&claude.use){[db,user]=await Promise.all([claude.use('db'),claude.use('user')])} }catch(e){}
+    if(!alive) return;
+    if(db){
+      try{const ce=user?await user.canEdit():false;setCanDesk(!!ce);setIsOwner(user?!!(await user.isOwner()):false);const w=user?await user.can('data.write'):null;setCanWrite(w!==false)}catch(e){}
+      try{setUid(user?await user.id():null)}catch(e){}
+      setStore(makeDbStore(db));
+    }else{setCanDesk(true);setIsOwner(true);setUid('local-device');setStore(makeLocalStore())}
+  })();
+  const fb=setTimeout(()=>{if(alive)setStore(s=>s||(setCanDesk(true),setIsOwner(true),setUid('local-device'),makeLocalStore()))},11000);
+  return()=>{alive=false;clearTimeout(fb)}},[]);
+
+  const hashView=()=>({'#manage':'manage','#desk':'manage','#settings':'manage'}[location.hash]||'student');
+  useEffect(()=>{const f=()=>setView(hashView());window.addEventListener('hashchange',f);return()=>window.removeEventListener('hashchange',f)},[]);
+  const go=v=>{setView(v);try{history.replaceState(null,'',v==='student'?'#student':'#'+v)}catch(e){}};
+
+  // shared settings
+  const [cfg,setCfg]=useState(()=>CFG);
+  const [cfgReady,setCfgReady]=useState(false);
+  useEffect(()=>{if(!store) return;return store.subscribeConfig(c=>{setCfg(applyCfg(c));setCfgReady(true)})},[store]);
+  useEffect(()=>{document.title=cfg.name[lang]||cfg.name.en},[cfg,lang]);
+  useEffect(()=>{if(!store||!canDesk) return;return store.subscribeStaff(u=>{setStaff(u);setStaffReady(true)})},[store,canDesk]);
+  const signOut=()=>{sess.clear();setSession(null)};
+  const deskAcc=staffReady&&session&&sessionValid(session,staff)?staff.find(u=>u.u===session.u):null;
+  const deskUser=deskAcc?{u:deskAcc.u,name:deskAcc.name,role:roleOf(deskAcc)}:null;
+  const hasAdmin=staff.some(u=>roleOf(u)==='admin'&&u.active!==false);
+  const ownerOpen=staffReady&&!hasAdmin&&isOwner&&!deskUser;
+
+  // student account (lives in this viewer's own subtree)
+  useEffect(()=>{if(!store||!uid){setAcct(null);return}return store.watchAccount(uid,a=>setAcct(a))},[store,uid]);
+  const me=acct&&stuSess&&stuSess.uid===uid&&stuSess.exp>Date.now()&&acct.sid===stuSess.sid&&acct.hash&&acct.hash.slice(0,12)===stuSess.v&&!acct.mustChange?acct:null;
+  useEffect(()=>{if(!store||!uid||!me){setMsgs([]);return}return store.watchMessages(uid,setMsgs)},[store,uid,me&&me.sid]);
+  const unread=msgs.filter(m=>m.from!=='student'&&!m.read).length;
+  const onStuIn=s=>{ls.set(STU_KEY,s);setStuSess(s)};
+  const onStuOut=()=>{try{localStorage.removeItem(STU_KEY)}catch(e){}setStuSess(null)};
+
+  return html`
+  <header className="top"><div className="wrap topin">
+    <div className="brand">
+      ${cfg.logo?html`<img className="logo" src=${cfg.logo} alt=""/>`:html`<div className="mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>`}
+      <div style=${{minWidth:0}}><h1>${cfg.name[lang]||cfg.name.ar||cfg.name.en}</h1><small>${L.brandSub}</small></div>
+    </div>
+    ${canDesk&&html`<div className="tabs" role="group">
+      <button aria-pressed=${view==='student'} onClick=${()=>go('student')}>${L.student}${unread>0&&html` <span className="dot num">${unread}</span>`}</button>
+      <button aria-pressed=${view==='manage'} onClick=${()=>go('manage')}>${L.manage}</button>
+    </div>`}
+    <button className="lang" onClick=${()=>setLang(lang==='ar'?'en':'ar')} aria-label="Language">${lang==='ar'?'English':'العربية'}</button>
+  </div></header>
+  <main className="wrap">
+    ${store&&html`<div className=${'banner'+(store.mode==='shared'?' ok':'')}><b>${store.mode==='shared'?L.liveB:L.demoB}</b><span>${store.mode==='shared'?L.shared:L.demo}</span></div>`}
+    ${!store||!cfgReady?html`<div className="empty">…</div>`:
+      view!=='manage'||!canDesk?html`<${Student} L=${L} lang=${lang} store=${store} canWrite=${canWrite} say=${say} tick=${tick} cfg=${cfg} me=${me} uid=${uid} acct=${acct} msgs=${msgs} onStuIn=${onStuIn} onStuOut=${onStuOut}/>`:
+      !staffReady?html`<div className="empty">…</div>`:
+      ownerOpen?html`<div className="banner">${L.ownerBypass}</div><${Manage} L=${L} lang=${lang} store=${store} say=${say} tick=${tick} cfg=${cfg} staff=${staff} who=${{u:'',name:L.sysAdmin,role:'admin',bootstrap:true}}/>`:
+      !staff.length?html`<div className="panel empty">${L.noAccounts}</div>`:
+      !deskUser?html`<${Login} L=${L} staff=${staff} onIn=${s=>{sess.set(s);setSession(s)}}/>`:
+      html`<${Manage} L=${L} lang=${lang} store=${store} say=${say} tick=${tick} cfg=${cfg} staff=${staff} who=${deskUser} onSignOut=${signOut}/>`}
+  </main>
+  <footer className="foot"><div className="wrap">
+    <span>© ${new Date().getFullYear()} Services Squire LLC</span>
+    <span>${L.rights}</span>
+  </div></footer>
+  ${toast&&html`<div className="toast" role="status"><div>${toast}</div></div>`}`;
+}
+
+function useDay(store,date){
+  const [state,setState]=useState({b:{},d:{},ready:false});
+  useEffect(()=>{if(!store) return;setState({b:{},d:{},ready:false});return store.subscribe(date,(b,d)=>setState({b,d,ready:true}))},[store,date]);
+  return state;
+}
+function counts(b,d,date,slotId){
+  const per={};SECTIONS.forEach(s=>per[s.id]={booked:0,in:0});
+  Object.entries(b).forEach(([k,x])=>{if(x.date!==date||x.slotId!==slotId) return;const st=effStatus(x,d[k]);if(!per[x.section]) return;if(st==='booked')per[x.section].booked++;else if(st==='checked-in')per[x.section].in++});
+  return per;
+}
+function stateClass(left,cap){if(left<=0) return 's-bad';if(left/cap<=0.3) return 's-warn';return 's-ok'}
+
+/* ---------- Student ---------- */
+function Student({L,lang,store,canWrite,say,tick,me,uid,acct,msgs,onStuIn,onStuOut}){
+  const goAccount=()=>{const el=document.getElementById('my-bookings');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})};
+  const days=useMemo(()=>{const a=[];const d=new Date();for(let i=0;i<7;i++){const x=new Date(d);x.setDate(d.getDate()+i);a.push(isoOf(x))}return a},[tick>0&&todayISO()]);
+  const [date,setDate]=useState(days[0]);
+  const [shift,setShift]=useState(()=>nowMin()>=toMin('11:30')?'e':'m');
+  const firstOpen=(dt,sh)=>{const s=SLOTS.filter(x=>x.shift===sh);const f=s.find(x=>canBookSlot(dt,x))||s[0];return f?f.id:null};
+  const [slotIdRaw,setSlotId]=useState(()=>firstOpen(days[0],nowMin()>=toMin('11:30')?'e':'m'));
+  const shiftSlots=SLOTS.filter(s=>s.shift===shift);
+  const slotId=shiftSlots.some(s=>s.id===slotIdRaw)?slotIdRaw:(shiftSlots[0]||{}).id;
+  const {b,d,ready}=useDay(store,date);
+  const per=counts(b,d,date,slotId);
+  const slot=slotId!=null?slotById(slotId):null;
+  const closed=closedInfo(date);
+  const open=!!slot&&canBookSlot(date,slot);
+  const [form,setForm]=useState(null); // section id
+  const [needAuth,setNeedAuth]=useState(null); // section id waiting for sign-in
+  const [ticket,setTicket]=useState(null); // {id,b}
+
+  const pickDate=dt=>{setDate(dt);setSlotId(firstOpen(dt,shift))};
+  const pickShift=sh=>{setShift(sh);setSlotId(firstOpen(date,sh))};
+  const pickZone=id=>{if(me) setForm(id);else setNeedAuth(id)};
+  useEffect(()=>{if(me&&needAuth){if(needAuth!=='__')setForm(needAuth);setNeedAuth(null)}},[me,needAuth]);
+
+  return html`
+  ${me?html`<div className="row signbar"><span className="hint">${L.welcome}</span><b>${me.name}</b><span className="hint mono" dir="ltr">${me.sid}</span><button className="btn" style=${{marginInlineStart:'auto'}} onClick=${onStuOut}>${L.signOut}</button></div>
+    <${Inbox} L=${L} lang=${lang} store=${store} uid=${uid} me=${me} msgs=${msgs} say=${say}/>`:
+  html`<section className="panel row" style=${{justifyContent:'space-between'}}><span className="hint" style=${{flex:'1 1 260px'}}>${L.accHint}</span><button className="btn pri" onClick=${()=>setNeedAuth('__')}>${L.signInStu}</button></section>`}
+  <section className="rail panel">
+    <div className="row" style=${{justifyContent:'space-between'}}><span className="label">${L.date}</span><span className="hint">${longDate(date,lang)}</span></div>
+    <div className="chips">${days.map((dt,i)=>{const c=closedInfo(dt);return html`<button key=${dt} className=${'chip'+(c?' off':'')} aria-pressed=${dt===date} onClick=${()=>pickDate(dt)} title=${c?(c.reason||L.closedB):''}><span className="d1">${i===0?L.today:i===1?L.tomorrow:dayLabel(dt,lang)}</span><span className="d2 num">${Number(dt.slice(8))}</span>${c&&html`<span className="d1 offTag">${L.closedB}</span>`}</button>`})}</div>
+    <div className="row" style=${{justifyContent:'space-between'}}>
+      <div className="seg" role="group" aria-label=${L.shift}>
+        <button aria-pressed=${shift==='m'} onClick=${()=>pickShift('m')}>${L.morning}</button>
+        <button aria-pressed=${shift==='e'} onClick=${()=>pickShift('e')}>${L.evening}</button>
+      </div>
+      <span className="pill s-acc">${L.dailyNote}</span>
+    </div>
+    ${shiftSlots.length?html`<div className="chips">${shiftSlots.map((s,i)=>{const ok=canBookSlot(date,s);return html`<button key=${s.id} className="chip num" aria-pressed=${s.id===slotId} onClick=${()=>setSlotId(s.id)} style=${{opacity:ok?1:.5}}><span className="d1">${L.hour} ${i+1}</span><span className="d2" style=${{fontSize:'14px'}}>${slotLabel(s,L)}</span></button>`})}</div>`:html`<p className="hint" style=${{margin:0}}>${L.noHoursShift}</p>`}
+  </section>
+
+  ${closed?html`<section className="panel closedBox"><h2>${L.closedToday}</h2><p style=${{margin:0}}>${closed.reason||(closed.weekly?L.closedWeekly+' · '+L.wd[new Date(date+'T12:00:00').getDay()]:'')}</p></section>`:slot&&html`
+  <section style=${{display:'grid',gap:'12px'}}>
+    <div className="row" style=${{justifyContent:'space-between'}}><h2 style=${{fontSize:'18px'}}>${L.pickZone}</h2><span className="hint num">${slotLabel(slot,L)}</span></div>
+    <p className="hint" style=${{margin:0,maxWidth:'70ch'}}>${L.ruleNote}</p>
+    <div className="grid">${SECTIONS.map(s=>{
+      const used=per[s.id].booked+per[s.id].in,left=Math.max(0,s.cap-used);
+      const cls=!open?'s-mut':stateClass(left,s.cap);
+      const lab=!open?L.closed:left<=0?L.full:left/s.cap<=0.3?L.limited:L.available;
+      return html`<button key=${s.id} className=${'zone '+cls} disabled=${!open||left<=0||!ready} onClick=${()=>pickZone(s.id)}>
+        <div className="hd"><div className="ic">${ICONS[s.icon]||ICONS.other}</div><div style=${{minWidth:0}}><h3>${s[lang]}</h3><div className="sub">${lang==='ar'?s.en:s.ar}</div></div></div>
+        <div className="seats" aria-hidden="true">${Array.from({length:s.cap},(_,i)=>html`<span key=${i} className=${'seat'+(i<left?' free':'')}></span>`)}</div>
+        <div className="ft"><span><span className="big num">${ready?left:'–'}</span> <span className="hint num">${L.of} ${s.cap} · ${L.seatsLeft}</span></span><span className="pill">${lab}</span></div>
+      </button>`})}</div>
+  </section>`}
+
+  ${me&&html`<div id="my-bookings"><${MyBookings} L=${L} lang=${lang} store=${store} me=${me} say=${say}/></div>
+    <details className="panel prof"><summary><h2>${L.profile}</h2></summary><${Profile} L=${L} store=${store} uid=${uid} me=${me} onSess=${onStuIn} say=${say} bare=${true}/></details>`}
+
+  ${needAuth&&html`<${Modal} onClose=${()=>setNeedAuth(null)}>
+    <div className="mh" style=${{justifyContent:'flex-end',marginBottom:'-14px'}}><button className="btn ghost" onClick=${()=>setNeedAuth(null)} aria-label=${L.close}>✕</button></div>
+    <${StudentAuth} L=${L} store=${store} uid=${uid} acct=${acct} onIn=${onStuIn} bare=${true}/>
+  </${Modal}>`}
+  ${form&&me&&html`<${BookForm} L=${L} lang=${lang} store=${store} canWrite=${canWrite} me=${me} uid=${uid} date=${date} slot=${slot} section=${secById(form)} onClose=${()=>setForm(null)} onBooked=${(id,data)=>{setForm(null);setTicket({id,b:data})}} goAccount=${goAccount}/>`}
+  ${ticket&&html`<${TicketModal} L=${L} lang=${lang} store=${store} id=${ticket.id} fallback=${ticket.b} say=${say} onClose=${()=>setTicket(null)}/>`}`;
+}
+
+function Modal({children,onClose,wide}){
+  useEffect(()=>{const f=e=>{if(e.key==='Escape')onClose()};window.addEventListener('keydown',f);return()=>window.removeEventListener('keydown',f)},[onClose]);
+  return html`<div className="scrim" onClick=${e=>{if(e.target===e.currentTarget)onClose()}}><div className=${'modal'+(wide?' wide':'')} role="dialog" aria-modal="true">${children}</div></div>`;
+}
+
+function BookForm({L,lang,store,canWrite,me,uid,date,slot,section,onClose,onBooked,goAccount}){
+  const [err,setErr]=useState(canWrite?'':L.errPerm);const [busy,setBusy]=useState(false);const [dup,setDup]=useState(false);
+  async function submit(e){
+    e.preventDefault();setErr('');setDup(false);
+    if(!canBookSlot(date,slot)) return setErr(closedInfo(date)?L.errClosedDay:L.errClosed);
+    setBusy(true);
+    const id=`${date}_${me.sid}`;
+    const data={code:makeCode(date),studentName:me.name,studentId:me.sid,uid,section:section.id,slotId:slot.id,date,status:'booked',createdAt:Date.now()};
+    try{
+      const r=await store.claim(id,data);
+      if(!r.ok){setBusy(false);if(r.reason==='dup')setDup(true);return setErr(r.reason==='dup'?L.errDup:r.reason==='full'?L.errFull:L.errBusy)}
+      onBooked(id,data);
+    }catch(ex){setBusy(false);setErr(ex&&ex.code==='invalid_argument'?L.errPerm:L.errGeneric)}
+  }
+  return html`<${Modal} onClose=${onClose}><form onSubmit=${submit} style=${{display:'grid',gap:'14px'}}>
+    <div className="mh"><h2>${L.bookTitle}</h2><button type="button" className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
+    <div className="recap"><span className="tag">${section[lang]}</span><span className="tag">${longDate(date,lang)}</span><span className="tag num">${slotLabel(slot,L)}</span></div>
+    <dl className="kv" style=${{margin:0}}>
+      <div><dt>${L.name}</dt><dd>${me.name}</dd></div>
+      <div><dt>${L.studentId}</dt><dd className="mono num" dir="ltr" style=${{textAlign:'start'}}>${me.sid}</dd></div>
+    </dl>
+    ${err&&html`<div className="err" role="alert">${err}${dup&&html` <button type="button" className="btn" style=${{marginTop:'8px'}} onClick=${()=>{onClose();goAccount()}}>${L.editBooking}</button>`}</div>`}
+    <div className="row" style=${{justifyContent:'flex-end'}}><button type="button" className="btn" onClick=${onClose}>${L.cancel}</button><button className="btn pri" disabled=${busy}>${busy?L.booking:L.confirm}</button></div>
+  </form></${Modal}>`;
+}
+
+/* ---------- Student accounts ---------- */
+const STU_KEY='crc.stu';
+const genTempPw=()=>{const A='abcdefghjkmnpqrstuvwxyz23456789';const a=new Uint32Array(8);crypto.getRandomValues(a);return Array.from(a,v=>A[v%A.length]).join('')};
+const makeStuSess=(uid,a)=>({uid,sid:a.sid,v:a.hash.slice(0,12),exp:Date.now()+14*86400e3});
+
+function StudentAuth({L,store,uid,acct,onIn,bare}){
+  const [tab,setTab]=useState(acct?'in':'new');
+  const [f,setF]=useState({name:'',sid:'',college:'',phone:'',p:'',p2:''});
+  const [err,setErr]=useState('');const [busy,setBusy]=useState(false);const [forgot,setForgot]=useState(false);
+  const [change,setChange]=useState(null); // account needing a new password
+  const fails=useRef(0);const until=useRef(0);
+  const set=k=>e=>{const v=k==='sid'?e.target.value.replace(/\D/g,''):e.target.value;setF(s=>({...s,[k]:v}))};
+  async function signIn(e){
+    e.preventDefault();setErr('');
+    const wait=Math.ceil((until.current-Date.now())/1000);if(wait>0) return setErr(L.locked.replace('{s}',wait));
+    setBusy(true);
+    let ok=false;try{const h=await hashPw(f.p,acct&&acct.salt||'none');ok=!!acct&&acct.sid===f.sid.trim()&&h===acct.hash}catch(x){}
+    setBusy(false);
+    if(!ok){fails.current++;if(fails.current>=5){until.current=Date.now()+30000;fails.current=0}setF(s=>({...s,p:''}));return setErr(acct&&acct.sid!==f.sid.trim()?L.noAccHere:L.badLogin)}
+    if(acct.mustChange){setChange(acct);setF(s=>({...s,p:'',p2:''}));return}
+    onIn(makeStuSess(uid,acct));
+  }
+  async function finishChange(e){
+    e.preventDefault();setErr('');
+    if(f.p.length<8) return setErr(L.vPw);if(f.p!==f.p2) return setErr(L.vPwMatch);
+    setBusy(true);
+    try{const salt=randSalt();const hash=await hashPw(f.p,salt);const a={...change,salt,hash,mustChange:false};delete a.resetAt;await store.saveAccount(uid,a);onIn(makeStuSess(uid,a))}catch(x){setErr(L.errGeneric)}
+    setBusy(false);
+  }
+  async function register(e){
+    e.preventDefault();setErr('');
+    if(acct) return setErr(L.accExists.replace('{sid}',acct.sid));
+    const name=f.name.trim().replace(/\s+/g,' '),sid=f.sid.trim();
+    if(name.split(' ').length<2||name.length<5) return setErr(L.errName);
+    if(!/^\d{4,12}$/.test(sid)) return setErr(L.errId);
+    if(f.p.length<8) return setErr(L.vPw);if(f.p!==f.p2) return setErr(L.vPwMatch);
+    if(!uid) return setErr(L.errPerm);
+    setBusy(true);
+    try{
+      const ok=await store.claimSid(sid,uid);
+      if(!ok){setBusy(false);return setErr(L.sidTaken)}
+      const salt=randSalt();const hash=await hashPw(f.p,salt);
+      const a={sid,name,college:f.college.trim(),phone:f.phone.trim(),salt,hash,createdAt:Date.now()};
+      await store.saveAccount(uid,a);onIn(makeStuSess(uid,a));
+    }catch(x){setErr(x&&x.code==='invalid_argument'?L.errPerm:L.errGeneric)}
+    setBusy(false);
+  }
+  const body=change?html`<form onSubmit=${finishChange} style=${{display:'grid',gap:'12px'}}>
+      <div><h3 style=${{fontSize:'16px'}}>${L.mustChangeT}</h3><p className="hint" style=${{margin:'4px 0 0'}}>${L.mustChangeH}</p></div>
+      <div className="field"><label htmlFor="sa-np">${L.newPw}</label><input id="sa-np" type="password" dir="ltr" autoComplete="new-password" value=${f.p} onInput=${set('p')}/></div>
+      <div className="field"><label htmlFor="sa-np2">${L.confirmPw}</label><input id="sa-np2" type="password" dir="ltr" autoComplete="new-password" value=${f.p2} onInput=${set('p2')}/></div>
+      ${err&&html`<div className="err" role="alert">${err}</div>`}
+      <button className="btn pri" disabled=${busy}>${busy?'…':L.setPw}</button>
+    </form>`:html`
+    <div className="seg" role="group" style=${{justifySelf:'center'}}>
+      <button type="button" aria-pressed=${tab==='in'} onClick=${()=>{setTab('in');setErr('')}}>${L.haveAcc}</button>
+      <button type="button" aria-pressed=${tab==='new'} onClick=${()=>{setTab('new');setErr('')}}>${L.newAcc}</button>
+    </div>
+    ${tab==='in'?html`<form onSubmit=${signIn} style=${{display:'grid',gap:'12px'}}>
+      <div className="field"><label htmlFor="sa-sid">${L.username} (${L.studentId})</label><input id="sa-sid" dir="ltr" className="num" inputMode="numeric" autoComplete="username" value=${f.sid} onInput=${set('sid')} required/></div>
+      <div className="field"><label htmlFor="sa-p">${L.password}</label><input id="sa-p" type="password" dir="ltr" autoComplete="current-password" value=${f.p} onInput=${set('p')} required/></div>
+      ${err&&html`<div className="err" role="alert">${err}</div>`}
+      <button className="btn pri" disabled=${busy}>${busy?'…':L.signIn}</button>
+      <button type="button" className="btn ghost" style=${{justifySelf:'start',paddingInline:0}} onClick=${()=>setForgot(!forgot)}>${L.forgot}</button>
+      ${forgot&&html`<div className="banner">${L.forgotText}</div>`}
+    </form>`:html`<form onSubmit=${register} style=${{display:'grid',gap:'12px'}}>
+      <p className="hint" style=${{margin:0}}>${L.accHint}</p>
+      <div className="field"><label htmlFor="sa-n">${L.fullName}</label><input id="sa-n" autoComplete="name" value=${f.name} onInput=${set('name')} required/></div>
+      <div className="field"><label htmlFor="sa-rsid">${L.username} (${L.studentId})</label><input id="sa-rsid" dir="ltr" className="num" inputMode="numeric" maxLength="12" autoComplete="username" value=${f.sid} onInput=${set('sid')} required/><span className="hint">${L.idHint}</span></div>
+      <div className="two">
+        <div className="field"><label htmlFor="sa-c">${L.college} <span className="hint">(${L.optional})</span></label><input id="sa-c" value=${f.college} onInput=${set('college')}/></div>
+        <div className="field"><label htmlFor="sa-ph">${L.phone} <span className="hint">(${L.optional})</span></label><input id="sa-ph" dir="ltr" inputMode="tel" autoComplete="tel" value=${f.phone} onInput=${set('phone')}/></div>
+      </div>
+      <div className="two">
+        <div className="field"><label htmlFor="sa-rp">${L.password}</label><input id="sa-rp" type="password" dir="ltr" autoComplete="new-password" value=${f.p} onInput=${set('p')} required/></div>
+        <div className="field"><label htmlFor="sa-rp2">${L.confirmPw}</label><input id="sa-rp2" type="password" dir="ltr" autoComplete="new-password" value=${f.p2} onInput=${set('p2')} required/></div>
+      </div>
+      ${err&&html`<div className="err" role="alert">${err}</div>`}
+      <button className="btn pri" disabled=${busy}>${busy?'…':L.register}</button>
+    </form>`}`;
+  const brand=html`<${AuthBrand} lang=${L.dir==='rtl'?'ar':'en'} sub=${change?L.mustChangeT:tab==='new'?L.createAcc:L.signInStu}/>`;
+  return bare?html`<div style=${{display:'grid',gap:'14px'}}>${brand}${body}</div>`:html`<section className="panel loginBox" style=${{maxWidth:'520px',display:'grid',gap:'14px'}}>${brand}${body}</section>`;
+}
+
+function MyBookings({L,lang,store,me,say,compact,onMore}){
+  const [b,setB]=useState({});const [d,setD]=useState({});const [ready,setReady]=useState(false);
+  const [ticket,setTicket]=useState(null);const [edit,setEdit]=useState(null);const [ask,setAsk]=useState(null);
+  useEffect(()=>store.watchMyBookings(me.sid,(bb,dd)=>{setB(bb);setD(dd);setReady(true)}),[store,me.sid]);
+  const t=todayISO();
+  const rows=Object.entries(b).map(([id,x])=>({id,...x,badge:ticketBadge(x,d[id])})).sort((a,c)=>a.date<c.date?-1:a.date>c.date?1:toMin(slotById(a.slotId).s)-toMin(slotById(c.slotId).s));
+  const up=rows.filter(r=>r.date>=t&&r.badge!=='cancelled'&&r.badge!=='expired');
+  const past=rows.filter(r=>!up.includes(r)).reverse().slice(0,10);
+  async function cancel(r){try{await store.cancelBooking(r.id);say(L.cancelledToast)}catch(e){say(L.errGeneric)}setAsk(null)}
+  const row=r=>html`<div key=${r.id} className="mineRow">
+    <div style=${{minWidth:0}}><div className="row" style=${{gap:'8px'}}><span className="code" dir="ltr">${r.code}</span><span className=${'pill '+BADGE_CLS[r.badge]}>${L['st_'+r.badge]}</span></div>
+      <div className="hint">${secById(r.section)[lang]} · ${longDate(r.date,lang)} · <span className="num">${slotLabel(slotById(r.slotId),L)}</span></div></div>
+    <div className="row" style=${{gap:'6px'}}>
+      <button className="btn" onClick=${()=>setTicket(r)}>${L.viewPass}</button>
+      ${r.badge==='active'&&!compact&&html`<button className="btn" onClick=${()=>setEdit(r)}>${L.editBooking}</button>`}
+      ${r.badge==='active'&&!compact&&(ask===r.id?html`<button className="btn bad" onClick=${()=>cancel(r)}>${L.yesCancel}</button>`:html`<button className="btn bad" onClick=${()=>setAsk(r.id)}>${L.cancel}</button>`)}
+    </div>
+  </div>`;
+  return html`<section className="panel" style=${{display:'grid',gap:'10px'}}>
+    <div className="row" style=${{justifyContent:'space-between'}}><h2 style=${{margin:0}}>${L.myBookings}</h2>${compact&&html`<button className="btn" onClick=${onMore}>${L.myAccount}</button>`}</div>
+    ${!ready?html`<p className="hint">…</p>`:up.length?html`<div className="mine">${up.map(row)}</div>`:html`<p className="hint" style=${{margin:0}}>${L.noBookings}</p>`}
+    ${!compact&&past.length>0&&html`<details><summary className="hint" style=${{cursor:'pointer'}}>${L.past} (${past.length})</summary><div className="mine" style=${{marginTop:'10px'}}>${past.map(row)}</div></details>`}
+    ${ticket&&html`<${TicketModal} L=${L} lang=${lang} store=${store} id=${ticket.id} fallback=${ticket} say=${say} onClose=${()=>setTicket(null)}/>`}
+    ${edit&&html`<${EditBooking} L=${L} lang=${lang} store=${store} bk=${edit} say=${say} onClose=${()=>setEdit(null)}/>`}
+  </section>`;
+}
+
+function EditBooking({L,lang,store,bk,say,onClose}){
+  const {b,d,ready}=useDay(store,bk.date);
+  const [slotId,setSlotId]=useState(bk.slotId);const [section,setSection]=useState(bk.section);
+  const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
+  const per=counts(Object.fromEntries(Object.entries(b).filter(([k])=>k!==bk.id)),d,bk.date,slotId);
+  const changed=slotId!==bk.slotId||section!==bk.section;
+  async function save(){
+    setErr('');const sl=slotById(slotId);if(!canBookSlot(bk.date,sl)) return setErr(L.errClosed);
+    setBusy(true);
+    try{const r=await store.moveBooking(bk.id,{slotId,section});if(!r.ok){setBusy(false);return setErr(r.reason==='full'?L.errFull:L.errBusy)}say(L.bookingUpdated);onClose()}catch(x){setErr(L.errGeneric)}
+    setBusy(false);
+  }
+  return html`<${Modal} onClose=${onClose} wide=${true}>
+    <div className="mh"><h2>${L.editBooking}</h2><button className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
+    <div className="recap"><span className="tag">${longDate(bk.date,lang)}</span><span className="tag mono" dir="ltr">${bk.code}</span></div>
+    <p className="hint" style=${{margin:0}}>${L.editHint}</p>
+    <div className="field"><label>${L.hour}</label><div className="chips">${SLOTS.map((s,i)=>{const ok=canBookSlot(bk.date,s);return html`<button key=${s.id} type="button" className="chip num" disabled=${!ok} aria-pressed=${s.id===slotId} onClick=${()=>setSlotId(s.id)}><span className="d1">${L.hour} ${i+1}</span><span className="d2" style=${{fontSize:'13px'}}>${slotLabel(s,L)}</span></button>`})}</div></div>
+    <div className="field"><label>${L.section}</label><div className="pickZones">${SECTIONS.map(s=>{const left=Math.max(0,s.cap-per[s.id].booked-per[s.id].in);return html`<button key=${s.id} type="button" className=${'pz '+stateClass(left,s.cap)} disabled=${left<=0||!ready} aria-pressed=${s.id===section} onClick=${()=>setSection(s.id)}><span>${s[lang]}</span><span className="num" style=${{color:'var(--st)',fontWeight:600}}>${ready?left:'–'}</span></button>`})}</div></div>
+    ${err&&html`<div className="err" role="alert">${err}</div>`}
+    <div className="row" style=${{justifyContent:'flex-end'}}><button className="btn" onClick=${onClose}>${L.cancel}</button><button className="btn pri" disabled=${!changed||busy} onClick=${save}>${busy?'…':L.saveChanges}</button></div>
+  </${Modal}>`;
+}
+
+function fmtStamp(t,lang){return new Date(t).toLocaleString(lang==='ar'?'ar-OM-u-nu-latn':'en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}
+function Bubbles({L,lang,msgs,mine}){
+  const ref=useRef();
+  const list=msgs.slice().sort((a,b)=>a.at-b.at);
+  useEffect(()=>{const el=ref.current;if(el)el.scrollTop=el.scrollHeight},[list.length]);
+  return html`<div className="chatLog" ref=${ref}>${list.length===0?html`<p className="hint" style=${{margin:'auto',textAlign:'center'}}>${L.noMessages}</p>`:list.map(m=>{
+    const fromStudent=m.from==='student';const own=mine==='student'?fromStudent:!fromStudent;
+    return html`<div key=${m.id} className=${'bub'+(own?' own':'')}>
+      <div className="bh">${fromStudent?(mine==='student'?L.you2:(m.byName||L.studentLbl)):(m.byName||(m.from&&m.from!=='staff'?m.from:'')||L.staffLbl)}</div>
+      <div className="bt">${m.text}</div>
+      <div className="bm num">${m.code?html`<span className="mono" dir="ltr">${m.code}</span> · `:''}${fmtStamp(m.at,lang)}</div>
+    </div>`})}</div>`;
+}
+function Composer({L,onSend,ph}){
+  const [t,setT]=useState('');const [busy,setBusy]=useState(false);
+  async function go(e){e.preventDefault();const v=t.trim();if(!v||busy) return;setBusy(true);try{await onSend(v.slice(0,2000));setT('')}catch(x){}setBusy(false)}
+  return html`<form className="composer" onSubmit=${go}>
+    <textarea id="chat-input" className="search" rows="2" placeholder=${ph||L.chatPh} value=${t} onInput=${e=>setT(e.target.value)} onKeyDown=${e=>{if(e.key==='Enter'&&!e.shiftKey){go(e)}}}></textarea>
+    <button className="btn pri" disabled=${busy||!t.trim()}>${busy?'…':L.send}</button>
+  </form>`;
+}
+function Inbox({L,lang,store,uid,me,msgs,say}){
+  const unread=msgs.filter(m=>m.from!=='student'&&!m.read);
+  const [open,setOpen]=useState(unread.length>0);
+  useEffect(()=>{if(unread.length>0)setOpen(true)},[unread.length>0]);
+  useEffect(()=>{if(!open) return;unread.forEach(m=>store.markRead(uid,m.id).catch(()=>{}))},[open,unread.map(m=>m.id).join()]);
+  const send=async text=>{await store.sendMessage(uid,{text,at:Date.now(),from:'student',byName:me.name,read:true},{sid:me.sid,name:me.name})};
+  return html`<details className="panel prof" open=${open} onToggle=${e=>setOpen(e.target.open)}>
+    <summary><h2>${L.chatTitle} ${unread.length>0&&html`<span className="pill s-bad num">${unread.length} ${L.newBadge}</span>`}</h2></summary>
+    <div style=${{display:'grid',gap:'10px',marginTop:'12px'}}>
+      <p className="hint" style=${{margin:0}}>${L.chatHint}</p>
+      <${Bubbles} L=${L} lang=${lang} msgs=${msgs} mine="student"/>
+      <${Composer} L=${L} onSend=${send}/>
+    </div>
+  </details>`;
+}
+
+function Profile({L,store,uid,me,onSess,say,bare}){
+  const [f,setF]=useState({name:me.name||'',college:me.college||'',phone:me.phone||''});
+  const [pw,setPw]=useState({c:'',p:'',p2:''});const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
+  async function saveP(e){e.preventDefault();setErr('');const name=f.name.trim().replace(/\s+/g,' ');if(name.split(' ').length<2) return setErr(L.errName);
+    setBusy(true);try{await store.saveAccount(uid,{...me,name,college:f.college.trim(),phone:f.phone.trim()});say(L.profileSaved)}catch(x){setErr(L.errGeneric)}setBusy(false)}
+  async function changePw(e){e.preventDefault();setErr('');
+    if(await hashPw(pw.c,me.salt)!==me.hash) return setErr(L.wrongCurrent);
+    if(pw.p.length<8) return setErr(L.vPw);if(pw.p!==pw.p2) return setErr(L.vPwMatch);
+    setBusy(true);try{const salt=randSalt();const hash=await hashPw(pw.p,salt);const a={...me,salt,hash};await store.saveAccount(uid,a);onSess(makeStuSess(uid,a));setPw({c:'',p:'',p2:''});say(L.pwChanged)}catch(x){setErr(L.errGeneric)}setBusy(false)}
+  return html`<div className=${bare?'sgrid':'panel sgrid'} style=${bare?{marginTop:'14px'}:null}>
+    ${!bare&&html`<h2>${L.profile}</h2>`}
+    <form onSubmit=${saveP} style=${{display:'grid',gap:'12px'}}>
+      <div className="two">
+        <div className="field"><label htmlFor="pf-n">${L.fullName}</label><input id="pf-n" value=${f.name} onInput=${e=>{const v=e.target.value;setF(s=>({...s,name:v}))}}/></div>
+        <div className="field"><label>${L.studentId}</label><input id="pf-sid" dir="ltr" className="num" value=${me.sid} disabled/></div>
+        <div className="field"><label htmlFor="pf-c">${L.college}</label><input id="pf-c" value=${f.college} onInput=${e=>{const v=e.target.value;setF(s=>({...s,college:v}))}}/></div>
+        <div className="field"><label htmlFor="pf-ph">${L.phone}</label><input id="pf-ph" dir="ltr" inputMode="tel" value=${f.phone} onInput=${e=>{const v=e.target.value;setF(s=>({...s,phone:v}))}}/></div>
+      </div>
+      <div><button className="btn pri" disabled=${busy}>${L.saveProfile}</button></div>
+    </form>
+    <form onSubmit=${changePw} style=${{display:'grid',gap:'12px',borderTop:'1px solid var(--line)',paddingTop:'14px'}}>
+      <h3 style=${{fontSize:'15px'}}>${L.changePw}</h3>
+      <div className="addStaff" style=${{borderTop:0,paddingTop:0}}>
+        <div className="field"><label htmlFor="pf-c0">${L.currentPw}</label><input id="pf-c0" type="password" dir="ltr" autoComplete="current-password" value=${pw.c} onInput=${e=>{const v=e.target.value;setPw(s=>({...s,c:v}))}}/></div>
+        <div className="field"><label htmlFor="pf-p1">${L.newPw}</label><input id="pf-p1" type="password" dir="ltr" autoComplete="new-password" value=${pw.p} onInput=${e=>{const v=e.target.value;setPw(s=>({...s,p:v}))}}/></div>
+        <div className="field"><label htmlFor="pf-p2">${L.confirmPw}</label><input id="pf-p2" type="password" dir="ltr" autoComplete="new-password" value=${pw.p2} onInput=${e=>{const v=e.target.value;setPw(s=>({...s,p2:v}))}}/></div>
+        <button className="btn" disabled=${busy}>${L.changePw}</button>
+      </div>
+    </form>
+    ${err&&html`<div className="err" role="alert">${err}</div>`}
+  </div>`;
+}
+
+function Account({L,lang,store,uid,acct,me,msgs,onStuIn,onStuOut,say}){
+  if(!me) return html`<${StudentAuth} L=${L} store=${store} uid=${uid} acct=${acct} onIn=${onStuIn}/>`;
+  return html`
+  <div className="row signbar"><span className="hint">${L.welcome}</span><b>${me.name}</b><span className="hint mono" dir="ltr">${me.sid}</span><button className="btn" style=${{marginInlineStart:'auto'}} onClick=${onStuOut}>${L.signOut}</button></div>
+  <${Inbox} L=${L} lang=${lang} store=${store} uid=${uid} msgs=${msgs}/>
+  <${MyBookings} L=${L} lang=${lang} store=${store} me=${me} say=${say}/>
+  <${Profile} L=${L} store=${store} uid=${uid} me=${me} onSess=${onStuIn} say=${say}/>`;
+}
+
+function MessageModal({L,store,targets,who,onClose,say}){
+  const [text,setText]=useState('');const [busy,setBusy]=useState(false);const [err,setErr]=useState('');
+  async function send(e){
+    e.preventDefault();const t=text.trim();if(!t) return;setBusy(true);setErr('');
+    let n=0;for(const x of targets){try{await store.sendMessage(x.uid,{text:t.slice(0,2000),at:Date.now(),from:'staff',byName:who?who.name:L.staffLbl,byU:who&&who.u?who.u:'owner',read:false,code:x.code||''},{sid:x.sid||'',name:x.name||''});n++}catch(e2){}}
+    setBusy(false);if(!n) return setErr(L.errGeneric);
+    say(targets.length>1?L.msgSentN.replace('{n}',n):L.msgSent);onClose();
+  }
+  return html`<${Modal} onClose=${onClose}><form onSubmit=${send} style=${{display:'grid',gap:'12px'}}>
+    <div className="mh"><h2>${L.msgTitle}</h2><button type="button" className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
+    <div className="recap"><span className="hint">${L.msgTo}:</span>${targets.slice(0,6).map(x=>html`<span key=${x.uid} className="tag">${x.name}</span>`)}${targets.length>6&&html`<span className="tag num">+${targets.length-6}</span>`}</div>
+    <textarea id="msg-text" className="search" rows="5" placeholder=${L.msgPh} value=${text} onInput=${e=>setText(e.target.value)} style=${{resize:'vertical'}}></textarea>
+    ${err&&html`<div className="err">${err}</div>`}
+    <div className="row" style=${{justifyContent:'flex-end'}}><button type="button" className="btn" onClick=${onClose}>${L.cancel}</button><button className="btn pri" disabled=${busy||!text.trim()}>${busy?'…':L.send}</button></div>
+  </form></${Modal}>`;
+}
+
+function StudentAccountsAdmin({L,lang,store,say}){
+  const [list,setList]=useState(null);const [q,setQ]=useState('');const [issued,setIssued]=useState(null);const [busy,setBusy]=useState('');const [err,setErr]=useState('');
+  const load=async()=>{setErr('');try{setList(await store.listAccounts())}catch(e){setErr(L.errGeneric)}};
+  async function issue(a){
+    setBusy(a.uid);setErr('');
+    try{const pw=genTempPw();const salt=randSalt();const hash=await hashPw(pw,salt);await store.adminResetPassword(a.uid,salt,hash);setIssued({uid:a.uid,sid:a.sid,name:a.name,pw});await load()}catch(e){setErr(L.errGeneric)}
+    setBusy('');
+  }
+  const qq=q.trim().toLowerCase();
+  const rows=(list||[]).filter(a=>a.sid&&(!qq||a.sid.includes(qq)||(a.name||'').toLowerCase().includes(qq))).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const fmt=t=>t?new Date(t).toLocaleDateString(lang==='ar'?'ar-OM-u-nu-latn':'en-GB'):'';
+  return html`<section className="panel sgrid">
+    <div><h2>${L.stuAccounts}</h2><p className="hint" style=${{margin:'4px 0 0'}}>${L.stuAccHint}</p></div>
+    ${list===null?html`<div><button className="btn" onClick=${load}>${L.loadAcc}</button></div>`:html`
+      <input id="sa-search" className="search" placeholder=${L.findSid} value=${q} onInput=${e=>setQ(e.target.value)}/>
+      ${issued&&html`<div className="banner ok" style=${{display:'grid',gap:'6px'}}><span>${issued.name} · <span className="mono" dir="ltr">${issued.sid}</span></span>
+        <span>${L.tempPw}: <b className="mono" dir="ltr" style=${{fontSize:'18px',letterSpacing:'.08em'}}>${issued.pw}</b> <button className="btn" onClick=${async()=>{try{await navigator.clipboard.writeText(issued.pw);say(L.copied)}catch(e){}}}>${L.copyPw}</button></span>
+        <span className="hint">${L.tempPwNote}</span></div>`}
+      ${rows.length===0?html`<p className="hint" style=${{margin:0}}>${L.noStudents}</p>`:html`<div className="zlist">${rows.slice(0,50).map(a=>html`<div key=${a.uid} className="srow">
+        <div style=${{minWidth:0}}><b>${a.name}</b> <span className="hint mono" dir="ltr">${a.sid}</span><div className="hint">${[a.college,a.phone,L.registered+' '+fmt(a.createdAt)].filter(Boolean).join(' · ')}</div></div>
+        ${a.mustChange&&html`<span className="pill s-warn">${L.tempPw}</span>`}
+        <button className="btn" style=${{marginInlineStart:'auto'}} disabled=${busy===a.uid} onClick=${()=>issue(a)}>${busy===a.uid?'…':L.issuePw}</button>
+      </div>`)}</div>`}`}
+    ${err&&html`<div className="err">${err}</div>`}
+  </section>`;
+}
+
+const BADGE_CLS={active:'s-ok',expired:'s-mut','checked-in':'s-acc',cancelled:'s-bad','no-show':'s-bad',booked:'s-warn'};
+
+function TicketModal({L,lang,store,id,fallback,say,onClose}){
+  const [b,setB]=useState(fallback||null);const [d,setD]=useState(null);const [ask,setAsk]=useState(false);
+  const day=useDay(store,(fallback&&fallback.date)||id.slice(0,10));
+  useEffect(()=>{if(day.ready&&day.b[id]){setB(day.b[id]);setD(day.d[id]||null)}},[day,id]);
+  if(!b) return null;
+  const badge=ticketBadge(b,d);const sec=secById(b.section);const sl=slotById(b.slotId);
+  async function copy(){try{await navigator.clipboard.writeText(b.code);say(L.copied)}catch(e){const r=document.createRange();const el=document.getElementById('tk-code');if(el){r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}}}
+  async function savePng(){
+    try{
+      const dl=await claude.use('downloads');if(!dl) return;
+      await document.fonts.ready;
+      const W=900,H=420,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+      g.fillStyle='#ffffff';g.fillRect(0,0,W,H);g.fillStyle='#0F5F4A';g.fillRect(0,0,W,10);
+      const rtl=lang==='ar';g.direction=rtl?'rtl':'ltr';g.textAlign=rtl?'right':'left';
+      const x0=rtl?W-300-40:40, xs=rtl?x0:x0;
+      const tx=rtl?W-40:40;
+      g.fillStyle='#5B6576';g.font='600 18px "Readex Pro", sans-serif';g.fillText((CFG.name[lang]||CFG.name.en)+' · '+L.ticket,tx,52);
+      g.fillStyle='#111827';g.font='600 34px "IBM Plex Mono", monospace';g.direction='ltr';g.textAlign=rtl?'right':'left';g.fillText(b.code,tx,100);g.direction=rtl?'rtl':'ltr';
+      const rows=[[L.name,b.studentName],[L.studentId,b.studentId],[L.section,sec[lang]],[L.time,longDate(b.date,lang)+' · '+slotLabel(sl,L)],[L.st_active===''?'':L.colStatus,L['st_'+badge]]];
+      let y=150;rows.forEach(([k,v])=>{g.fillStyle='#5B6576';g.font='500 15px "IBM Plex Sans Arabic", sans-serif';g.fillText(k,tx,y);g.fillStyle='#111827';g.font='600 22px "IBM Plex Sans Arabic", sans-serif';g.fillText(String(v),tx,y+28);y+=54});
+      const q=qrFor(b.code);const n=q.getModuleCount();const size=260;const cell=Math.floor(size/n);const qx=rtl?40:W-40-cell*n,qy=(H-cell*n)/2+5;
+      g.fillStyle='#111827';for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))g.fillRect(qx+k*cell,qy+r*cell,cell,cell);
+      g.strokeStyle='#D6DCE5';g.setLineDash([8,8]);g.lineWidth=2;const lx=rtl?40+cell*n+30:W-40-cell*n-30;g.beginPath();g.moveTo(lx,30);g.lineTo(lx,H-20);g.stroke();
+      const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+      await dl.save({filename:b.code+'.png',data:blob});say(L.saved);
+    }catch(e){}
+  }
+  async function doCancel(){try{await store.cancelBooking(id);setB({...b,status:'cancelled'});setAsk(false);say(L.cancelledToast)}catch(e){say(L.errGeneric)}}
+  const canCancel=badge==='active';
+  return html`<${Modal} onClose=${onClose} wide=${true}>
+    <div className="mh"><h2>${L.ticket}</h2><button className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
+    <article className="ticket">
+      <div className="band"></div>
+      <div className="main">
+        <div className="row" style=${{justifyContent:'space-between'}}><div><div className="label">${L.ticketCode}</div><div id="tk-code" className="code" dir="ltr">${b.code}</div></div><span className=${'pill '+BADGE_CLS[badge]}>${L['st_'+badge]}</span></div>
+        <dl className="kv" style=${{margin:0}}>
+          <div><dt>${L.name}</dt><dd>${b.studentName}</dd></div>
+          <div><dt>${L.studentId}</dt><dd className="num mono" dir="ltr" style=${{textAlign:'start'}}>${b.studentId}</dd></div>
+          <div><dt>${L.section}</dt><dd>${sec[lang]}</dd></div>
+          <div><dt>${L.time}</dt><dd className="num">${slotLabel(sl,L)}<div className="hint" style=${{fontWeight:400}}>${longDate(b.date,lang)}</div></dd></div>
+        </dl>
+      </div>
+      <div className="stub"><${QR} text=${b.code}/><span className="hint">${L.hour} ${sl.id}</span></div>
+    </article>
+    <p className="hint" style=${{margin:0}}>${L.showAtDesk}</p>
+    ${ask?html`<div className="err" style=${{display:'grid',gap:'10px'}}><span>${L.cancelAsk}</span><div className="row"><button className="btn bad" onClick=${doCancel}>${L.yesCancel}</button><button className="btn" onClick=${()=>setAsk(false)}>${L.keep}</button></div></div>`:
+    html`<div className="row"><button className="btn" onClick=${copy}>${L.copy}</button>${store.mode==='shared'&&html`<button className="btn" onClick=${savePng}>${L.save}</button>`}${canCancel&&html`<button className="btn bad" style=${{marginInlineStart:'auto'}} onClick=${()=>setAsk(true)}>${L.cancelMine}</button>`}</div>`}
+  </${Modal}>`;
+}
+
+function FindModal({L,lang,date,b,onClose,onFound}){
+  const [sid,setSid]=useState(ls.get('crc.me',{i:''}).i);const [err,setErr]=useState('');
+  return html`<${Modal} onClose=${onClose}><form style=${{display:'grid',gap:'14px'}} onSubmit=${e=>{e.preventDefault();const id=`${date}_${sid.trim()}`;if(b[id])onFound(id);else setErr(L.notFound)}}>
+    <div className="mh"><h2>${L.findTicket}</h2><button type="button" className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
+    <p className="hint" style=${{margin:0}}>${L.findHint} <b>${longDate(date,lang)}</b></p>
+    <div className="field"><label htmlFor="fd-id">${L.studentId}</label><input id="fd-id" dir="ltr" className="num" inputMode="numeric" value=${sid} onInput=${e=>setSid(e.target.value.replace(/\D/g,''))}/></div>
+    ${err&&html`<div className="err">${err}</div>`}
+    <div className="row" style=${{justifyContent:'flex-end'}}><button className="btn pri">${L.find}</button></div>
+  </form></${Modal}>`;
+}
+
+/* ---------- Desk ---------- */
+function defaultDeskSlot(){const n=nowMin();const live=SLOTS.find(s=>n>=toMin(s.s)&&n<toMin(s.e));if(live)return live.id;const next=SLOTS.find(s=>toMin(s.s)>n);return next?next.id:(SLOTS[SLOTS.length-1]||{}).id}
+
+function Gauge({used,inCount,L}){
+  const R=70,C=2*Math.PI*R*0.75; // 270° arc
+  const f=x=>Math.min(1,x/TOTAL)*C;
+  const arc=(len,color,offset)=>html`<circle cx="90" cy="90" r=${R} fill="none" stroke=${color} strokeWidth="14" strokeLinecap="butt" strokeDasharray=${`${len} ${2*Math.PI*R}`} strokeDashoffset=${-offset} transform="rotate(135 90 90)"/>`;
+  return html`<div className="gauge">
+    <svg viewBox="0 0 180 160" aria-hidden="true">
+      ${arc(C,'var(--surface-2)',0)}
+      ${arc(f(inCount),'var(--accent)',0)}
+      ${arc(f(used-inCount),'var(--warn)',f(inCount))}
+      <text x="90" y="92" textAnchor="middle" fill="var(--fg)" style=${{font:'600 38px var(--f-display)'}} className="num">${used}</text>
+      <text x="90" y="116" textAnchor="middle" fill="var(--muted)" style=${{font:'500 13px var(--f-body)'}}>${L.of} ${TOTAL}</text>
+    </svg>
+    <div className="legend"><span style=${{'--c':'var(--accent)'}}>${L.checkedIn} ${inCount}</span><span style=${{'--c':'var(--warn)'}}>${L.booked} ${used-inCount}</span><span style=${{'--c':'var(--surface-2)'}}>${L.free} ${TOTAL-used}</span></div>
+  </div>`;
+}
+
+function Desk({L,lang,store,say,tick,who,onSignOut}){
+  const [date,setDate]=useState(todayISO());
+  const [slotIdRaw,setSlotId]=useState(defaultDeskSlot);
+  const slotId=SLOTS.some(s=>s.id===slotIdRaw)?slotIdRaw:(SLOTS[0]||{}).id;
+  const [sec,setSec]=useState('all');const [q,setQ]=useState('');const [exp,setExp]=useState(false);const [msgTo,setMsgTo]=useState(null);
+  const {b,d,ready}=useDay(store,date);
+  const closed=closedInfo(date);
+  const per=counts(b,d,date,slotId);
+  const used=SECTIONS.reduce((a,s)=>a+per[s.id].booked+per[s.id].in,0);
+  const inCount=SECTIONS.reduce((a,s)=>a+per[s.id].in,0);
+  const slot=slotById(slotId);
+  const n=nowMin(),isToday=date===todayISO();
+  const lateNow=isToday&&n>=toMin(slot.s)+LATE_MIN;
+
+  const qq=q.trim().toLowerCase();
+  const rows=Object.entries(b).map(([id,x])=>({id,...x,st:effStatus(x,d[id])}))
+    .filter(r=>qq?(r.studentName.toLowerCase().includes(qq)||r.studentId.includes(qq)||r.code.toLowerCase().includes(qq)):r.slotId===slotId)
+    .filter(r=>sec==='all'||r.section===sec)
+    .sort((a,b2)=>a.slotId-b2.slotId||order(a.st)-order(b2.st)||a.studentName.localeCompare(b2.studentName));
+  function order(s){return{booked:0,'checked-in':1,'no-show':2,cancelled:3}[s]??4}
+
+  async function act(r,status){
+    try{
+      if(status===null){await store.clearDesk(r.id);return}
+      await store.setDesk(r.id,{status,code:r.code,date:r.date,sid:r.studentId,at:Date.now(),by:who&&who.u?who.u:'owner',byName:who?who.name:''});
+      say(status==='checked-in'?L.checkinToast:L.noshowToast);
+    }catch(e){say(L.errGeneric)}
+  }
+  const dates=[-1,0,1].map(k=>{const x=new Date();x.setDate(x.getDate()+k);return isoOf(x)});
+
+  return html`
+  <section className="panel rail">
+    <div className="row" style=${{justifyContent:'space-between'}}>
+      <div className="seg">${dates.map((dt,i)=>html`<button key=${dt} aria-pressed=${dt===date} onClick=${()=>setDate(dt)}>${i===1?L.today:dayLabel(dt,lang)} <span className="num">${Number(dt.slice(8))}</span></button>`)}</div>
+      <span className="hint">${longDate(date,lang)}</span>
+    </div>
+    <div className="chips">${SLOTS.map(s=>{const live=isToday&&n>=toMin(s.s)&&n<toMin(s.e);return html`<button key=${s.id} className="chip num" aria-pressed=${s.id===slotId} onClick=${()=>{setSlotId(s.id);setQ('')}}><span className="d1">${live?'● '+L.now:(s.shift==='m'?L.morning:L.evening).split(' ').slice(-1)[0]}</span><span className="d2" style=${{fontSize:'14px'}}>${slotLabel(s,L)}</span></button>`})}</div>
+  </section>
+
+  ${closed&&html`<div className="banner"><b>${L.closedB}</b><span>${closed.reason||L.closedWeekly}${Object.values(b).some(x=>x.status!=='cancelled')?' — '+L.bookingsWarn:''}</span></div>`}
+  <section className="deskTop">
+    <div className="panel"><h2>${L.occNow}</h2><${Gauge} used=${used} inCount=${inCount} L=${L}/></div>
+    <div className="panel">
+      <h2>${L.section}</h2>
+      <div className="bars">${SECTIONS.map(s=>{const p=per[s.id];const left=s.cap-p.booked-p.in;return html`<div key=${s.id} className="bar">
+        <span style=${{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>${s[lang]}</span>
+        <div className="track" title=${`${p.in}/${p.booked}/${left}`}><i style=${{width:(p.in/s.cap*100)+'%',background:'var(--accent)'}}></i><i style=${{width:(p.booked/s.cap*100)+'%',background:'var(--warn)'}}></i></div>
+        <span className=${'num '+stateClass(left,s.cap)} style=${{fontWeight:600,color:'var(--st)'}}>${p.booked+p.in}/${s.cap}</span>
+      </div>`})}</div>
+    </div>
+  </section>
+
+  <section className="panel" style=${{display:'grid',gap:'12px'}}>
+    <div className="row" style=${{justifyContent:'space-between'}}><h2 style=${{margin:0}}>${qq?L.search.split(' ')[0]:L.roster} <span className="hint num">(${rows.length})</span></h2><div className="row" style=${{gap:'8px'}}>${(()=>{const t=rows.filter(r=>r.uid&&r.st!=='cancelled');return !qq&&t.length>0&&html`<button className="btn" onClick=${()=>setMsgTo(t.map(r=>({uid:r.uid,name:r.studentName,sid:r.studentId,code:r.code})))}>${L.msgAll}</button>`})()}<button className="btn pri" onClick=${()=>setExp(true)}>${L.exportBtn}</button></div></div>
+    ${msgTo&&html`<${MessageModal} L=${L} store=${store} targets=${msgTo} who=${who} say=${say} onClose=${()=>setMsgTo(null)}/>`}
+    ${exp&&html`<${ExportModal} L=${L} lang=${lang} b=${b} d=${d} date=${date} slotId=${slotId} say=${say} onClose=${()=>setExp(false)}/>`}
+    <div className="row">
+      <input id="dk-search" className="search" style=${{flex:'1 1 240px'}} placeholder=${L.search} value=${q} onInput=${e=>setQ(e.target.value)}/>
+      <select id="dk-sec" className="search" style=${{flex:'0 1 200px'}} value=${sec} onChange=${e=>setSec(e.target.value)}><option value="all">${L.allSections}</option>${SECTIONS.map(s=>html`<option key=${s.id} value=${s.id}>${s[lang]}</option>`)}</select>
+    </div>
+    <div className="tablewrap"><table>
+      <thead><tr><th>${L.colTicket}</th><th>${L.colStudent}</th><th>${L.colSection}</th>${qq&&html`<th>${L.slot}</th>`}<th>${L.colStatus}</th><th></th></tr></thead>
+      <tbody>${!ready?html`<tr><td colSpan="6" className="empty">…</td></tr>`:rows.length===0?html`<tr><td colSpan="6" className="empty">${qq?L.notFound:L.none}</td></tr>`:rows.map(r=>{
+        const rsl=slotById(r.slotId);const late=r.st==='booked'&&isToday&&n>=toMin(rsl.s)+LATE_MIN&&n<toMin(rsl.e)+60;
+        const badge=r.st==='booked'&&slotPhase(r.date,rsl)==='ended'?'expired':r.st==='booked'?'booked':r.st;
+        return html`<tr key=${r.id} className=${late?'late':''}>
+          <td><span className="code" dir="ltr" style=${{fontSize:'13px'}}>${r.code}</span></td>
+          <td><div style=${{fontWeight:600}}>${r.studentName}</div><div className="hint mono num" dir="ltr" style=${{textAlign:'start'}}>${r.studentId}</div></td>
+          <td>${secById(r.section)[lang]}</td>
+          ${qq&&html`<td className="num">${slotLabel(rsl,L)}</td>`}
+          <td><span className=${'pill '+BADGE_CLS[badge]}>${L['st_'+badge]}</span>${late&&html` <span className="pill s-warn">${L.late}</span>`}${d[r.id]&&d[r.id].code===r.code&&d[r.id].by&&html`<div className="hint" style=${{fontSize:'11.5px',marginTop:'3px'}}>${L.by} ${d[r.id].byName||d[r.id].by}</div>`}</td>
+          <td><div className="acts">
+            ${r.st==='booked'&&html`<button className="btn ok" onClick=${()=>act(r,'checked-in')}>${L.checkIn}</button><button className="btn bad" onClick=${()=>act(r,'no-show')}>${L.noShow}</button>`}
+            ${(r.st==='checked-in'||r.st==='no-show')&&html`<button className="btn ghost" onClick=${()=>act(r,null)}>${L.undo}</button>`}
+            ${r.uid&&html`<button className="btn" title=${L.sendMsg} onClick=${()=>setMsgTo([{uid:r.uid,name:r.studentName,sid:r.studentId,code:r.code}])}>${L.sendMsg}</button>`}
+          </div></td>
+        </tr>`})}</tbody>
+    </table></div>
+  </section>`;
+}
+
+/* ---------- Export ---------- */
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function periodSlots(p){if(p==='all') return SLOTS;if(p==='m'||p==='e') return SLOTS.filter(s=>s.shift===p);return SLOTS.filter(s=>String(s.id)===String(p))}
+function periodLabel(p,L){if(p==='all') return L.wholeDay;if(p==='m') return L.morning;if(p==='e') return L.evening;const i=SLOTS.findIndex(s=>String(s.id)===String(p));return i<0?'':`${L.hour} ${i+1} (${slotLabel(SLOTS[i],L)})`}
+function exportRows(b,d,date,period,withCancelled){
+  const ids=new Set(periodSlots(period).map(s=>s.id));
+  return Object.entries(b).map(([id,x])=>{const st=effStatus(x,d[id]);const sl=slotById(x.slotId);const badge=st==='booked'&&slotPhase(x.date,sl)==='ended'?'expired':st==='booked'?'active':st;return{id,...x,st,badge}})
+    .filter(r=>r.date===date&&ids.has(r.slotId)&&(withCancelled||r.st!=='cancelled'))
+    .sort((a,b2)=>toMin(slotById(a.slotId).s)-toMin(slotById(b2.slotId).s)||SECTIONS.findIndex(s=>s.id===a.section)-SECTIONS.findIndex(s=>s.id===b2.section)||a.studentName.localeCompare(b2.studentName));
+}
+async function saveFile(name,blob){
+  let dl=null;try{dl=window.claude&&claude.use?await claude.use('downloads'):null}catch(e){}
+  if(dl){await dl.save({filename:name,data:blob});return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
+}
+function buildCsv(rows,L,lang,date,period){
+  const head=[L.rptNo,L.colTicket,L.name,L.studentId,L.section,L.hour,L.colStatus];
+  const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+  const meta=[[L.rptDay,dayLong(date,lang)],[L.rptDate,date],[L.rptPeriod,periodLabel(period,L)],[]];
+  const lines=meta.map(r=>r.map(q).join(',')).concat([head.map(q).join(',')],rows.map((r,i)=>[i+1,r.code,r.studentName,'\t'+r.studentId,secById(r.section)[lang],slotLabel(slotById(r.slotId),L),L['st_'+r.badge]].map(q).join(',')));
+  return new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+}
+function dayLong(iso,lang){return new Date(iso+'T12:00:00').toLocaleDateString(lang==='ar'?'ar-OM':'en-GB',{weekday:'long'})}
+function dateOnly(iso,lang){return new Date(iso+'T12:00:00').toLocaleDateString(lang==='ar'?'ar-OM-u-nu-latn':'en-GB',{day:'numeric',month:'long',year:'numeric'})}
+
+const RPT_CSS=`
+.rp{width:794px;height:1123px;background:#fff;color:#111827;font-family:"IBM Plex Sans Arabic","Readex Pro",sans-serif;font-size:12.5px;padding:44px 48px 40px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;line-height:1.5}
+.rp *{box-sizing:border-box;letter-spacing:0!important;text-transform:none!important}
+.rp .hd{display:flex;align-items:center;gap:14px;border-bottom:3px solid #0F5F4A;padding-bottom:14px}
+.rp .hd img,.rp .hd .mk{width:54px;height:54px;border-radius:12px;object-fit:contain;background:#0F5F4A;flex:none}
+.rp h1{font-family:"Readex Pro",sans-serif;font-size:21px;margin:0;font-weight:600}
+.rp h2{font-family:"Readex Pro",sans-serif;font-size:14px;margin:0 0 8px;font-weight:600;color:#0F5F4A}
+.rp .sub{color:#5B6576;font-size:12px}
+.rp .meta{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.rp .meta div{background:#F3F5F8;border-radius:8px;padding:8px 10px}
+.rp .meta b{display:block;font-size:10.5px;color:#5B6576;font-weight:500;letter-spacing:.03em}
+.rp .meta span{font-weight:600;font-size:13px}
+.rp .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.rp .kpis div{border:1px solid #D6DCE5;border-radius:8px;padding:8px 10px}
+.rp .kpis b{display:block;font-family:"Readex Pro",sans-serif;font-size:20px;font-weight:600;line-height:1.2}
+.rp .kpis span{color:#5B6576;font-size:11px}
+.rp table{width:100%;border-collapse:collapse}
+.rp th{background:#0F5F4A;color:#fff;font-weight:500;font-size:11px;padding:6px 8px;text-align:start}
+.rp td{padding:5px 8px;border-bottom:1px solid #E3E7EE;height:27px}
+.rp tr:nth-child(even) td{background:#F8FAFC}
+.rp .mono{font-family:"IBM Plex Mono",monospace;direction:ltr;unicode-bidi:isolate}
+.rp .ft{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;color:#5B6576;font-size:11px;border-top:1px solid #D6DCE5;padding-top:10px}
+.rp .sig{display:inline-block;width:200px;border-bottom:1px solid #111827;height:28px;margin-inline-start:8px}
+.rp .st-checked-in{color:#2F5BEA;font-weight:600}.rp .st-no-show,.rp .st-cancelled{color:#D9344F;font-weight:600}.rp .st-active{color:#0E9F6E;font-weight:600}.rp .st-expired{color:#5B6576}
+.rp .none{color:#5B6576;text-align:center;padding:30px}
+`;
+function buildReportPages(rows,{b,d,date,period,L,lang}){
+  const dir=T[lang].dir;
+  const pslots=periodSlots(period);
+  const head=`<div class="hd">${CFG.logo?`<img src="${CFG.logo}">`:`<div class="mk"></div>`}<div><h1>${esc(CFG.name[lang]||CFG.name.en)}</h1><div class="sub">${esc(L.rptTitle)}</div></div></div>`;
+  const meta=`<div class="meta"><div><b>${L.rptDay}</b><span>${esc(dayLong(date,lang))}</span></div><div><b>${L.rptDate}</b><span>${esc(dateOnly(date,lang))}</span></div><div><b>${L.rptPeriod}</b><span>${esc(periodLabel(period,L))}</span></div><div><b>${L.rptGenerated}</b><span class="mono">${new Date().toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'})}</span></div></div>`;
+  const live=rows.filter(r=>r.st!=='cancelled');
+  const att=live.filter(r=>r.st==='checked-in').length,ns=live.filter(r=>r.st==='no-show').length;
+  const offered=TOTAL*pslots.length;
+  const kp=`<div><h2>${L.rptSummary}</h2><div class="kpis"><div><b>${live.length}</b><span>${L.rptTotal}</span></div><div><b>${att}</b><span>${L.rptAttended}</span></div><div><b>${ns}</b><span>${L['st_no-show']}</span></div><div><b>${offered?Math.round((live.length-ns)/offered*100):0}%</b><span>${L.rptRate} · ${offered} ${L.rptSeats}</span></div></div></div>`;
+  const zt=`<div><h2>${L.rptByZone}</h2><table><thead><tr><th>${L.section}</th><th>${L.rptSeats}</th><th>${L.booked}</th><th>${L.rptAttended}</th><th>${L['st_no-show']}</th></tr></thead><tbody>${SECTIONS.map(s=>{const z=live.filter(r=>r.section===s.id);return `<tr><td>${esc(s[lang])}</td><td>${s.cap*pslots.length}</td><td>${z.length}</td><td>${z.filter(r=>r.st==='checked-in').length}</td><td>${z.filter(r=>r.st==='no-show').length}</td></tr>`}).join('')}</tbody></table></div>`;
+  const thead=`<thead><tr><th>${L.rptNo}</th><th>${L.colTicket}</th><th>${L.name}</th><th>${L.studentId}</th><th>${L.section}</th><th>${L.hour}</th><th>${L.colStatus}</th></tr></thead>`;
+  const tr=(r,i)=>`<tr><td>${i+1}</td><td class="mono">${esc(r.code)}</td><td>${esc(r.studentName)}</td><td class="mono">${esc(r.studentId)}</td><td>${esc(secById(r.section)[lang])}</td><td class="mono">${esc(slotLabel(slotById(r.slotId),L))}</td><td class="st-${r.badge}">${esc(L['st_'+r.badge])}</td></tr>`;
+  const firstCap=Math.max(4,13-SECTIONS.length), nextCap=31;
+  const chunks=[];let i=0;chunks.push(rows.slice(0,firstCap));i=firstCap;while(i<rows.length){chunks.push(rows.slice(i,i+nextCap));i+=nextCap}
+  const n=chunks.length;let idx=0;
+  return chunks.map((ch,p)=>{
+    const list=ch.length?`<table>${thead}<tbody>${ch.map(r=>tr(r,idx++)).join('')}</tbody></table>`:(p===0?`<div class="none">${L.rptNone}</div>`:'');
+    const foot=`<div class="ft"><span>${p===n-1?`${L.rptSign}<span class="sig"></span>`:''}</span><span>${L.rptPage} ${p+1} / ${n}</span></div>`;
+    return `<div class="rp" dir="${dir}" lang="${lang}">${p===0?head+meta+kp+zt+`<h2 style="margin-bottom:-8px">${L.rptList}</h2>`:`<div class="sub">${esc(CFG.name[lang]||'')} · ${esc(dateOnly(date,lang))} · ${esc(periodLabel(period,L))}</div>`}${list}${foot}</div>`;
+  });
+}
+async function buildPdf(pages){
+  await document.fonts.ready;
+  const host=document.createElement('div');host.style.cssText='position:fixed;left:-10000px;top:0;z-index:-1';
+  host.innerHTML=`<style>${RPT_CSS}</style>`;document.body.appendChild(host);
+  try{
+    const pdf=new window.jspdf.jsPDF({unit:'pt',format:'a4',compress:true});
+    const W=pdf.internal.pageSize.getWidth(),H=pdf.internal.pageSize.getHeight();
+    for(let i=0;i<pages.length;i++){
+      const wrap=document.createElement('div');wrap.innerHTML=pages[i];host.appendChild(wrap);
+      const canvas=await html2canvas(wrap.firstChild,{scale:2,backgroundColor:'#ffffff',logging:false,useCORS:true});
+      if(i>0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',0,0,W,H);
+      wrap.remove();
+    }
+    return pdf.output('blob');
+  }finally{host.remove()}
+}
+
+function ExportModal({L,lang,b,d,date,slotId,onClose,say}){
+  const [period,setPeriod]=useState('all');const [withC,setWithC]=useState(false);const [busy,setBusy]=useState('');const [err,setErr]=useState('');
+  const rows=exportRows(b,d,date,period,withC);
+  const base=`${date}_${period==='all'?'day':period==='m'?'morning':period==='e'?'evening':'hour'+(SLOTS.findIndex(s=>String(s.id)===String(period))+1)}`;
+  async function run(kind){
+    setErr('');setBusy(kind);
+    try{
+      if(kind==='csv'){await saveFile(`bookings_${base}.csv`,buildCsv(rows,L,lang,date,period))}
+      else{const blob=await buildPdf(buildReportPages(rows,{b,d,date,period,L,lang}));await saveFile(`bookings_${base}.pdf`,blob)}
+      say(L.exported);onClose();
+    }catch(e){setErr(e&&e.code==='declined'?L.exportDeclined:L.exportFail);console.warn(e)}
+    setBusy('');
+  }
+  return html`<${Modal} onClose=${onClose}>
+    <div className="mh"><h2>${L.exportTitle}</h2><button className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
+    <div className="recap"><span className="tag">${dayLong(date,lang)}</span><span className="tag">${dateOnly(date,lang)}</span></div>
+    <div className="field"><label htmlFor="ex-period">${L.period}</label>
+      <select id="ex-period" className="search" value=${period} onChange=${e=>setPeriod(e.target.value)}>
+        <option value="all">${L.wholeDay}</option>
+        ${SLOTS.some(s=>s.shift==='m')&&html`<option value="m">${L.morning}</option>`}
+        ${SLOTS.some(s=>s.shift==='e')&&html`<option value="e">${L.evening}</option>`}
+        ${SLOTS.map((s,i)=>html`<option key=${s.id} value=${String(s.id)}>${L.hour} ${i+1} · ${slotLabel(s,L)}</option>`)}
+      </select>
+    </div>
+    <label className="row" style=${{gap:'8px',fontSize:'14px'}}><input id="ex-c" type="checkbox" checked=${withC} onChange=${e=>setWithC(e.target.checked)}/>${L.includeCancelled}</label>
+    <p className="hint num" style=${{margin:0}}>${rows.length} ${L.exportCount}</p>
+    ${err&&html`<div className="err">${err}</div>`}
+    <div className="row" style=${{justifyContent:'flex-end'}}>
+      <button className="btn" disabled=${!!busy} onClick=${()=>run('csv')}>${busy==='csv'?L.exporting:L.csv}</button>
+      <button className="btn pri" disabled=${!!busy} onClick=${()=>run('pdf')}>${busy==='pdf'?L.exporting:L.pdf}</button>
+    </div>
+  </${Modal}>`;
+}
+
+/* ---------- Management (reception + settings) ---------- */
+function Manage({L,lang,store,say,tick,cfg,staff,who,onSignOut}){
+  const isAdmin=who.role==='admin';
+  const [sub,setSub]=useState(()=>ls.get('crc.manageTab','desk'));
+  const tab=sub==='settings'&&!isAdmin?'desk':sub;
+  const pick=t=>{setSub(t);ls.set('crc.manageTab',t)};
+  const [threads,setThreads]=useState([]);
+  useEffect(()=>store.watchThreads(setThreads),[store]);
+  const unreadT=threads.filter(threadUnread).length;
+  return html`
+  <div className="row signbar">
+    <span className="hint">${L.signedAs}</span><b>${who.name}</b>${who.u&&html`<span className="hint mono" dir="ltr">@${who.u}</span>`}
+    <span className=${'pill '+(isAdmin?'s-acc':'s-ok')}>${isAdmin?L.roleAdmin:L.roleStaff}</span>
+    <div className="row" style=${{gap:'8px',marginInlineStart:'auto'}}>
+      <div className="seg" role="group">
+        <button aria-pressed=${tab==='desk'} onClick=${()=>pick('desk')}>${L.deskTab}</button>
+        <button aria-pressed=${tab==='msgs'} onClick=${()=>pick('msgs')}>${L.msgTab}${unreadT>0&&html` <span className="dot num">${unreadT}</span>`}</button>
+        ${isAdmin&&html`<button aria-pressed=${tab==='settings'} onClick=${()=>pick('settings')}>${L.settingsTab}</button>`}
+      </div>
+      ${onSignOut&&html`<button className="btn" onClick=${onSignOut}>${L.signOut}</button>`}
+    </div>
+  </div>
+  ${tab==='settings'?html`<${Settings} L=${L} lang=${lang} store=${store} say=${say} cfg=${cfg} staff=${staff} who=${who}/>`:
+    tab==='msgs'?html`<${StaffMessages} L=${L} lang=${lang} store=${store} who=${who} threads=${threads} say=${say}/>`:
+    html`<${Desk} L=${L} lang=${lang} store=${store} say=${say} tick=${tick} cfg=${cfg} who=${who}/>`}`;
+}
+
+/* ---------- Staff messages ---------- */
+const threadUnread=t=>t.lastFrom==='student'&&(t.lastAt||0)>(t.staffSeenAt||0);
+function StaffMessages({L,lang,store,who,threads,say}){
+  const [sel,setSel]=useState(null); // {uid,sid,name}
+  const [q,setQ]=useState('');const [nsid,setNsid]=useState('');const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
+  const [msgs,setMsgs]=useState([]);
+  useEffect(()=>{if(!sel){setMsgs([]);return}return store.watchMessages(sel.uid,setMsgs)},[store,sel&&sel.uid]);
+  const cur=sel&&threads.find(t=>t.uid===sel.uid);
+  useEffect(()=>{if(cur&&threadUnread(cur))store.markThreadSeen(cur.uid)},[cur&&cur.lastAt]);
+  async function start(e){
+    e.preventDefault();setErr('');const sid=nsid.trim();if(!/^\d{4,12}$/.test(sid)) return setErr(L.errId);
+    const ex=threads.find(t=>t.sid===sid);if(ex){setSel({uid:ex.uid,sid:ex.sid,name:ex.name});setNsid('');return}
+    setBusy(true);
+    try{const a=await store.accountBySid(sid);if(!a||!a.uid) setErr(L.notFoundSid);else{setSel({uid:a.uid,sid,name:a.name||sid});setNsid('')}}catch(x){setErr(L.errGeneric)}
+    setBusy(false);
+  }
+  const send=async text=>{await store.sendMessage(sel.uid,{text,at:Date.now(),from:'staff',byName:who.name,byU:who.u||'owner',read:false},{sid:sel.sid,name:sel.name})};
+  const qq=q.trim().toLowerCase();
+  const list=threads.filter(t=>!qq||(t.name||'').toLowerCase().includes(qq)||(t.sid||'').includes(qq));
+  return html`<section className=${'panel msgGrid'+(sel?' hasSel':'')}>
+    <div className="tlist">
+      <form className="row" style=${{gap:'6px'}} onSubmit=${start}>
+        <input id="nc-sid" className="search" style=${{flex:'1 1 120px'}} dir="ltr" inputMode="numeric" placeholder=${L.sidPh} value=${nsid} onInput=${e=>setNsid(e.target.value.replace(/\D/g,''))}/>
+        <button className="btn pri" disabled=${busy||!nsid}>${L.newConvo}</button>
+      </form>
+      ${err&&html`<div className="err">${err}</div>`}
+      <input id="nc-q" className="search" placeholder=${L.searchConvo} value=${q} onInput=${e=>setQ(e.target.value)}/>
+      <div className="tscroll">${list.length===0?html`<p className="hint" style=${{margin:'8px 0'}}>${L.noConvos}</p>`:list.map(t=>html`
+        <button key=${t.uid} className=${'trow'+(sel&&sel.uid===t.uid?' on':'')} onClick=${()=>setSel({uid:t.uid,sid:t.sid,name:t.name})}>
+          <div className="row" style=${{justifyContent:'space-between',gap:'6px'}}><b style=${{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>${t.name||t.sid}</b>${threadUnread(t)&&html`<span className="udot" aria-label=${L.newBadge}></span>`}</div>
+          <div className="hint" style=${{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><span className="mono" dir="ltr">${t.sid}</span> · ${t.lastFrom==='student'?'':L.you2+': '}${t.lastText}</div>
+          <div className="hint num" style=${{fontSize:'11.5px'}}>${fmtStamp(t.lastAt,lang)}</div>
+        </button>`)}</div>
+    </div>
+    <div className="tpane">
+      ${!sel?html`<div className="empty">${L.pickConvo}</div>`:html`
+        <div className="row" style=${{gap:'8px'}}>
+          <button className="btn ghost backBtn" onClick=${()=>setSel(null)}>${L.back}</button>
+          <b>${sel.name}</b><span className="hint mono" dir="ltr">${sel.sid}</span>
+        </div>
+        <${Bubbles} L=${L} lang=${lang} msgs=${msgs} mine="staff"/>
+        <${Composer} L=${L} onSend=${send}/>`}
+    </div>
+  </section>`;
+}
+
+/* ---------- Brand block for sign-in panels ---------- */
+function AuthBrand({lang,sub}){
+  const name=CFG.name[lang]||CFG.name.ar||CFG.name.en;
+  return html`<div className="authBrand">
+    ${CFG.logo?html`<img src=${CFG.logo} alt=""/>`:html`<div className="mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>`}
+    <div className="nm">${name}</div>
+    ${sub&&html`<div className="sb">${sub}</div>`}
+  </div>`;
+}
+
+/* ---------- Login ---------- */
+function Login({L,staff,onIn}){
+  const [u,setU]=useState('');const [p,setP]=useState('');const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
+  const fails=useRef(0);const until=useRef(0);
+  async function submit(e){
+    e.preventDefault();setErr('');
+    const wait=Math.ceil((until.current-Date.now())/1000);if(wait>0) return setErr(L.locked.replace('{s}',wait));
+    setBusy(true);
+    const acc=staff.find(x=>x.u===u.trim().toLowerCase()&&x.active!==false);
+    let ok=false;try{const h=await hashPw(p,acc?acc.salt:'none');ok=!!acc&&h===acc.hash}catch(x){}
+    setBusy(false);
+    if(!ok){fails.current++;if(fails.current>=5){until.current=Date.now()+30000;fails.current=0}setP('');return setErr(L.badLogin)}
+    onIn({u:acc.u,name:acc.name,v:acc.hash.slice(0,12),exp:Date.now()+12*3600e3});
+  }
+  return html`<section className="panel loginBox"><form onSubmit=${submit} style=${{display:'grid',gap:'14px'}}>
+    <${AuthBrand} lang=${L.dir==='rtl'?'ar':'en'} sub=${L.loginTitle}/>
+    <p className="hint" style=${{margin:0,textAlign:'center'}}>${L.loginHint}</p>
+    <div className="field"><label htmlFor="lg-u">${L.username}</label><input id="lg-u" dir="ltr" autoComplete="username" autoCapitalize="none" value=${u} onInput=${e=>setU(e.target.value)} required/></div>
+    <div className="field"><label htmlFor="lg-p">${L.password}</label><input id="lg-p" dir="ltr" type="password" autoComplete="current-password" value=${p} onInput=${e=>setP(e.target.value)} required/></div>
+    ${err&&html`<div className="err" role="alert">${err}</div>`}
+    <button className="btn pri" disabled=${busy}>${busy?'…':L.signIn}</button>
+  </form></section>`;
+}
+
+/* ---------- Staff accounts (owner) ---------- */
+function StaffAdmin({L,store,staff,say,who}){
+  const [nu,setNu]=useState(()=>({u:'',name:'',p:'',p2:'',role:staff.some(x=>roleOf(x)==='admin')?'staff':'admin'}));
+  const activeAdmins=staff.filter(x=>roleOf(x)==='admin'&&x.active!==false);
+  const isLastAdmin=x=>roleOf(x)==='admin'&&x.active!==false&&activeAdmins.length<=1;
+  const guard=(x,fn)=>{if(isLastAdmin(x)){setErr(L.lastAdmin);return}fn()};const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
+  const [pwFor,setPwFor]=useState(null);const [pw,setPw]=useState({p:'',p2:''});const [rmFor,setRmFor]=useState(null);
+  const write=async(users,msg)=>{setBusy(true);setErr('');try{await store.saveStaff(users);say(msg)}catch(x){setErr(L.errGeneric)}setBusy(false)};
+  const checkPw=(a,b)=>a.length<8?L.vPw:a!==b?L.vPwMatch:'';
+  async function add(e){
+    e.preventDefault();const u=nu.u.trim().toLowerCase();
+    if(!/^[a-z0-9._-]{3,24}$/.test(u)) return setErr(L.vUser);
+    if(staff.some(x=>x.u===u)) return setErr(L.vUserDup);
+    if(!nu.name.trim()) return setErr(L.vDisp);
+    const v=checkPw(nu.p,nu.p2);if(v) return setErr(v);
+    const salt=randSalt();const hash=await hashPw(nu.p,salt);
+    await write([...staff,{u,name:nu.name.trim(),role:nu.role,salt,hash,active:true,createdAt:Date.now()}],L.staffSaved);
+    setNu({u:'',name:'',p:'',p2:'',role:'staff'});
+  }
+  async function setPassword(u){
+    const v=checkPw(pw.p,pw.p2);if(v) return setErr(v);
+    const salt=randSalt();const hash=await hashPw(pw.p,salt);
+    await write(staff.map(x=>x.u===u?{...x,salt,hash}:x),L.staffSaved);setPwFor(null);setPw({p:'',p2:''});
+  }
+  return html`<section className="panel sgrid">
+    <div><h2>${L.staff}</h2><p className="hint" style=${{margin:'4px 0 0'}}>${L.staffHint}</p></div>
+    ${staff.length===0&&html`<span className="hint">${L.noStaff}</span>`}
+    <div className="zlist">${staff.map(x=>html`<div key=${x.u} className="srow">
+      <div style=${{minWidth:0}}><b>${x.name}</b> <span className="hint mono" dir="ltr">@${x.u}</span>${who&&who.u===x.u&&html` <span className="hint">(${L.you})</span>`}</div>
+      <span className=${'pill '+(roleOf(x)==='admin'?'s-acc':'s-ok')}>${roleOf(x)==='admin'?L.roleAdmin:L.roleStaff}</span>
+      ${x.active===false&&html`<span className="pill s-mut">${L.disabled}</span>`}
+      <div className="row" style=${{gap:'6px',marginInlineStart:'auto'}}>
+        <button className="btn" disabled=${busy} onClick=${()=>{setPwFor(pwFor===x.u?null:x.u);setPw({p:'',p2:''});setErr('')}}>${L.resetPw}</button>
+        <button className="btn" disabled=${busy} onClick=${()=>roleOf(x)==='admin'?guard(x,()=>write(staff.map(y=>y.u===x.u?{...y,role:'staff'}:y),L.staffSaved)):write(staff.map(y=>y.u===x.u?{...y,role:'admin'}:y),L.staffSaved)}>${roleOf(x)==='admin'?L.makeStaff:L.makeAdmin}</button>
+        <button className="btn" disabled=${busy} onClick=${()=>x.active!==false?guard(x,()=>write(staff.map(y=>y.u===x.u?{...y,active:false}:y),L.staffSaved)):write(staff.map(y=>y.u===x.u?{...y,active:true}:y),L.staffSaved)}>${x.active!==false?L.disable:L.enable}</button>
+        ${rmFor===x.u?html`<button className="btn bad" disabled=${busy} onClick=${()=>{setRmFor(null);guard(x,()=>write(staff.filter(y=>y.u!==x.u),L.staffRemoved))}}>${L.removeAsk}</button>`:html`<button className="btn bad" onClick=${()=>setRmFor(x.u)}>${L.remove}</button>`}
+      </div>
+      ${pwFor===x.u&&html`<div className="pwrow">
+        <input id=${'pw1-'+x.u} className="search" type="password" dir="ltr" autoComplete="new-password" placeholder=${L.newPw} value=${pw.p} onInput=${e=>{const v=e.target.value;setPw(s=>({...s,p:v}))}}/>
+        <input id=${'pw2-'+x.u} className="search" type="password" dir="ltr" autoComplete="new-password" placeholder=${L.confirmPw} value=${pw.p2} onInput=${e=>{const v=e.target.value;setPw(s=>({...s,p2:v}))}}/>
+        <button className="btn pri" disabled=${busy} onClick=${()=>setPassword(x.u)}>${L.setPw}</button>
+      </div>`}
+    </div>`)}</div>
+    <form className="addStaff" onSubmit=${add}>
+      <div className="field"><label htmlFor="ns-u">${L.username}</label><input id="ns-u" dir="ltr" autoCapitalize="none" autoComplete="off" value=${nu.u} onInput=${e=>{const v=e.target.value;setNu(s=>({...s,u:v}))}}/></div>
+      <div className="field"><label htmlFor="ns-n">${L.displayName}</label><input id="ns-n" value=${nu.name} onInput=${e=>{const v=e.target.value;setNu(s=>({...s,name:v}))}}/></div>
+      <div className="field"><label htmlFor="ns-p">${L.password}</label><input id="ns-p" type="password" dir="ltr" autoComplete="new-password" value=${nu.p} onInput=${e=>{const v=e.target.value;setNu(s=>({...s,p:v}))}}/></div>
+      <div className="field"><label htmlFor="ns-p2">${L.confirmPw}</label><input id="ns-p2" type="password" dir="ltr" autoComplete="new-password" value=${nu.p2} onInput=${e=>{const v=e.target.value;setNu(s=>({...s,p2:v}))}}/></div>
+      <div className="field" style=${{gridColumn:'1/-1'}}><label>${L.role}</label>
+        <div className="roles">${[['staff',L.roleStaff,L.roleStaffD],['admin',L.roleAdmin,L.roleAdminD]].map(([k,t,dsc])=>html`<button key=${k} type="button" className="pz" aria-pressed=${nu.role===k} onClick=${()=>setNu(s=>({...s,role:k}))}><span><b>${t}</b><span className="hint" style=${{display:'block'}}>${dsc}</span></span></button>`)}</div>
+      </div>
+      <button className="btn pri" disabled=${busy}>+ ${L.addStaff}</button>
+    </form>
+    ${err&&html`<div className="err" role="alert">${err}</div>`}
+  </section>`;
+}
+
+/* ---------- Settings ---------- */
+const ICON_KEYS=['ps','billiards','tt','carrom','foosball','cards','other'];
+const clone=o=>JSON.parse(JSON.stringify(o));
+function shrinkImage(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>{const img=new Image();img.onload=()=>{
+      const M=160,k=Math.min(1,M/Math.max(img.width||M,img.height||M));
+      const w=Math.max(1,Math.round((img.width||M)*k)),h=Math.max(1,Math.round((img.height||M)*k));
+      const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);
+      res(c.toDataURL('image/png'));
+    };img.onerror=rej;img.src=r.result};
+    r.onerror=rej;r.readAsDataURL(file);
+  });
+}
+function validate(c,L){
+  if(!c.name.ar.trim()||!c.name.en.trim()) return L.vName;
+  if(!c.sections.length) return L.vNoZone;
+  for(const s of c.sections){if(!String(s.ar).trim()||!String(s.en).trim()) return L.vZoneName;const n=+s.cap;if(!Number.isInteger(n)||n<1||n>200) return L.vCap}
+  if(!c.slots.length) return L.vNoHour;
+  for(const s of c.slots){if(!s.s||!s.e||toMin(s.e)<=toMin(s.s)) return L.vHour}
+  const so=c.slots.slice().sort((a,b)=>toMin(a.s)-toMin(b.s));
+  for(let i=1;i<so.length;i++) if(toMin(so[i].s)<toMin(so[i-1].e)) return `${L.vOverlap} ${so[i-1].s}–${so[i-1].e} / ${so[i].s}–${so[i].e}`;
+  for(const x of c.closed) if(!/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')) return L.vDate;
+  return '';
+}
+
+function Settings({L,lang,store,say,cfg,staff,who}){
+  const [draft,setDraft]=useState(()=>clone(cfg));
+  const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
+  const dirty=JSON.stringify(draft)!==JSON.stringify(cfg);
+  const up=fn=>setDraft(d=>{const n=clone(d);fn(n);return n});
+  const total=draft.sections.reduce((a,s)=>a+(+s.cap||0),0);
+  const fileRef=useRef();
+
+  async function onLogo(e){const f=e.target.files&&e.target.files[0];e.target.value='';if(!f) return;try{const url=await shrinkImage(f);up(d=>{d.logo=url})}catch(x){setErr(L.errGeneric)}}
+  async function save(){
+    const c=clone(draft);c.sections.forEach(s=>{s.cap=+s.cap;s.ar=s.ar.trim();s.en=s.en.trim()});c.name.ar=c.name.ar.trim();c.name.en=c.name.en.trim();
+    c.slots.sort((a,b)=>toMin(a.s)-toMin(b.s));c.closed=c.closed.filter(x=>x.date).sort((a,b)=>a.date<b.date?-1:1);
+    const v=validate(c,L);if(v){setErr(v);return}
+    setErr('');setBusy(true);
+    try{await store.saveConfig(c);setDraft(clone(c));say(L.savedSettings)}catch(x){setErr(x&&x.code==='invalid_argument'?L.deskOnly:L.errGeneric)}
+    setBusy(false);
+  }
+  const newSlotId=()=>Math.max(0,...draft.slots.map(s=>+s.id||0))+1;
+
+  return html`
+  <${StaffAdmin} L=${L} store=${store} staff=${staff} say=${say} who=${who}/>
+  <${StudentAccountsAdmin} L=${L} lang=${lang} store=${store} say=${say}/>
+  <section className="panel sgrid">
+    <h2>${L.identity}</h2>
+    <div className="row" style=${{alignItems:'flex-start',gap:'16px'}}>
+      <div className="logoBox">${draft.logo?html`<img src=${draft.logo} alt=${L.logo}/>`:html`<div className="mark" style=${{width:'64px',height:'64px',borderRadius:'16px'}}><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>`}</div>
+      <div style=${{display:'grid',gap:'8px',flex:'1 1 220px',minWidth:0}}>
+        <div className="row"><button className="btn" onClick=${()=>fileRef.current.click()}>${L.uploadLogo}</button>${draft.logo&&html`<button className="btn ghost" onClick=${()=>up(d=>{d.logo=''})}>${L.removeLogo}</button>`}</div>
+        <input ref=${fileRef} id="st-logo" type="file" accept="image/*" hidden onChange=${onLogo}/>
+        <span className="hint">${L.logoHint}</span>
+      </div>
+    </div>
+    <div className="two">
+      <div className="field"><label htmlFor="st-nar">${L.nameAr}</label><input id="st-nar" dir="rtl" value=${draft.name.ar} onInput=${e=>{const v=e.target.value;up(d=>{d.name.ar=v})}}/></div>
+      <div className="field"><label htmlFor="st-nen">${L.nameEn}</label><input id="st-nen" dir="ltr" value=${draft.name.en} onInput=${e=>{const v=e.target.value;up(d=>{d.name.en=v})}}/></div>
+    </div>
+  </section>
+
+  <section className="panel sgrid">
+    <div className="row" style=${{justifyContent:'space-between'}}><h2 style=${{margin:0}}>${L.zones}</h2><span className="pill s-acc num">${L.totalCap}: ${total}</span></div>
+    <div className="zlist">${draft.sections.map((s,i)=>html`<div key=${s.id} className="zrow">
+      <div className="field iconPick"><label>${L.icon}</label><div className="icons">${ICON_KEYS.map(k=>html`<button key=${k} type="button" aria-pressed=${s.icon===k} aria-label=${k} onClick=${()=>up(d=>{d.sections[i].icon=k})}>${ICONS[k]}</button>`)}</div></div>
+      <div className="field"><label htmlFor=${'z-ar-'+s.id}>${L.zoneAr}</label><input id=${'z-ar-'+s.id} dir="rtl" value=${s.ar} onInput=${e=>{const v=e.target.value;up(d=>{d.sections[i].ar=v})}}/></div>
+      <div className="field"><label htmlFor=${'z-en-'+s.id}>${L.zoneEn}</label><input id=${'z-en-'+s.id} dir="ltr" value=${s.en} onInput=${e=>{const v=e.target.value;up(d=>{d.sections[i].en=v})}}/></div>
+      <div className="field capF"><label htmlFor=${'z-cap-'+s.id}>${L.capacity}</label><input id=${'z-cap-'+s.id} className="num" type="number" min="1" max="200" inputMode="numeric" value=${s.cap} onInput=${e=>{const v=e.target.value;up(d=>{d.sections[i].cap=v})}}/></div>
+      <button type="button" className="btn bad rm" onClick=${()=>up(d=>{d.sections.splice(i,1)})}>${L.remove}</button>
+    </div>`)}</div>
+    <div><button className="btn" onClick=${()=>up(d=>{d.sections.push({id:'z'+Date.now().toString(36),icon:'other',cap:4,ar:'',en:''})})}>+ ${L.addZone}</button></div>
+  </section>
+
+  <section className="panel sgrid">
+    <h2>${L.hours}</h2>
+    <div className="zlist">${draft.slots.map((s,i)=>html`<div key=${s.id} className="hrow">
+      <div className="seg">
+        <button type="button" aria-pressed=${s.shift==='m'} onClick=${()=>up(d=>{d.slots[i].shift='m'})}>${L.morningS}</button>
+        <button type="button" aria-pressed=${s.shift==='e'} onClick=${()=>up(d=>{d.slots[i].shift='e'})}>${L.eveningS}</button>
+      </div>
+      <div className="field tf"><label htmlFor=${'h-s-'+s.id}>${L.from}</label><input id=${'h-s-'+s.id} type="time" dir="ltr" value=${s.s} onInput=${e=>{const v=e.target.value;up(d=>{d.slots[i].s=v})}}/></div>
+      <div className="field tf"><label htmlFor=${'h-e-'+s.id}>${L.to}</label><input id=${'h-e-'+s.id} type="time" dir="ltr" value=${s.e} onInput=${e=>{const v=e.target.value;up(d=>{d.slots[i].e=v})}}/></div>
+      <button type="button" className="btn bad rm" onClick=${()=>up(d=>{d.slots.splice(i,1)})}>${L.remove}</button>
+    </div>`)}</div>
+    <div><button className="btn" onClick=${()=>up(d=>{const last=d.slots[d.slots.length-1];const st=last?last.e:'08:00';const em=Math.min(toMin(st)+60,23*60+59);d.slots.push({id:newSlotId(),shift:toMin(st)<720?'m':'e',s:st,e:`${pad(Math.floor(em/60))}:${pad(em%60)}`})})}>+ ${L.addHour}</button></div>
+  </section>
+
+  <section className="panel sgrid">
+    <h2>${L.closedDays}</h2>
+    <div className="field"><label>${L.weeklyOff}</label>
+      <div className="row">${L.wd.map((w,k)=>html`<button key=${k} type="button" className="chip" style=${{minWidth:'auto',padding:'7px 12px'}} aria-pressed=${draft.weeklyOff.includes(k)} onClick=${()=>up(d=>{d.weeklyOff=d.weeklyOff.includes(k)?d.weeklyOff.filter(x=>x!==k):[...d.weeklyOff,k]})}>${w}</button>`)}</div>
+    </div>
+    <div className="field"><label>${L.specificDays}</label>
+      ${draft.closed.length===0&&html`<span className="hint">${L.noClosed}</span>`}
+      <div className="zlist">${draft.closed.map((x,i)=>html`<div key=${i} className="crow">
+        <input id=${'c-d-'+i} type="date" dir="ltr" className="search" value=${x.date} onInput=${e=>{const v=e.target.value;up(d=>{d.closed[i].date=v})}} aria-label=${L.date}/>
+        <input id=${'c-r-'+i} className="search" placeholder=${L.reasonPh} value=${x.reason||''} onInput=${e=>{const v=e.target.value;up(d=>{d.closed[i].reason=v})}} aria-label=${L.reason}/>
+        <button type="button" className="btn bad rm" onClick=${()=>up(d=>{d.closed.splice(i,1)})}>${L.remove}</button>
+      </div>`)}</div>
+      <div><button className="btn" onClick=${()=>up(d=>{d.closed.push({date:todayISO(),reason:''})})}>+ ${L.addDay}</button></div>
+    </div>
+  </section>
+
+  <div className="savebar">
+    <div className="wrap row" style=${{justifyContent:'space-between'}}>
+      <span className="hint">${err?html`<span style=${{color:'var(--bad)',fontWeight:600}}>${err}</span>`:dirty?L.unsaved:''}</span>
+      <div className="row">
+        <button className="btn ghost" onClick=${()=>{setDraft(clone(normCfg({...DEFAULT_CFG,logo:draft.logo})));setErr('')}}>${L.resetDefaults}</button>
+        ${dirty&&html`<button className="btn" onClick=${()=>{setDraft(clone(cfg));setErr('')}}>${L.discard}</button>`}
+        <button className="btn pri" disabled=${!dirty||busy} onClick=${save}>${busy?'…':L.saveSettings}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(html`<${App}/>`);
+</script>
+
+</body>
+</html>
