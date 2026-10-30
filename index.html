@@ -246,6 +246,10 @@ details summary{list-style-position:inside}
 .pwrow{display:flex;flex-wrap:wrap;gap:8px;width:100%}
 .pwrow input{flex:1 1 180px;background:var(--surface)}
 .addStaff{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end;padding-top:12px;border-top:1px solid var(--line)}
+.mgSec{display:grid;gap:10px;padding-top:14px;border-top:1px solid var(--line)}
+.mgSec h3{font-size:15px;display:flex;align-items:center;gap:8px}
+.dangerSec h3{color:var(--bad)}
+.warnBox{border-color:var(--warn)}
 .savebar{position:sticky;bottom:0;z-index:4;background:var(--surface);border-top:1px solid var(--line);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-block:12px calc(12px + env(safe-area-inset-bottom,0px))}
 @media (max-width:860px){.zrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.zrow .iconPick{grid-column:1/-1}.zrow .rm{justify-self:start}}
 @media (max-width:520px){.zrow{grid-template-columns:1fr}.crow{grid-template-columns:1fr}.crow .rm{justify-self:start}}
@@ -261,7 +265,7 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=5"></script>
+<script src="config.js?v=6"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -395,6 +399,11 @@ const T={
   convos:'المحادثات',newConvo:'محادثة جديدة',sidPh:'الرقم الجامعي',open2:'فتح',noConvos:'لا توجد محادثات بعد.',pickConvo:'اختر محادثة أو ابدأ واحدة جديدة.',
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
   installApp:'تثبيت التطبيق',thisHour:'هذه الساعة',msgAllDay:'رسالة لكل طلاب هذا اليوم',
+  errRestricted:'حسابك مقيّد حالياً من الحجز. راجع إدارة المركز.',restrictedT:'حسابك مقيّد من الحجز',restrictedUntil:'لا يمكنك الحجز حتى {d}.',restrictedOpen:'لا يمكنك الحجز حتى ترفع الإدارة التقييد.',restrictedHint:'للاستفسار راسل الإدارة من لوحة المراسلة أدناه.',myWarnings:'الإنذارات',warningN:'إنذار رقم {n}',
+  stuAccHint2:'إدارة حسابات الطلاب متاحة لمدير النظام فقط: تعديل البيانات، التقييد من الحجز، الإنذارات، الحذف، وإصدار كلمة مرور مؤقتة عند النسيان.',allStudents:'الكل',restrictedF:'مقيّد',warnedF:'لديه إنذارات',refresh:'تحديث',warnsN:'{n} إنذار',manageStu:'إدارة',
+  editDetails:'تعديل البيانات',sidChangeNote:'تغيير الرقم الجامعي يغيّر اسم المستخدم الذي يدخل به الطالب، ويُحدَّث في حجوزاته.',sidTaken2:'هذا الرقم الجامعي مسجّل لطالب آخر.',restriction:'التقييد من الحجز',restrictHint:'التقييد يمنع الطالب من الحجز ويلغي حجوزاته القادمة، ويُرسَل له إشعار بالسبب.',restrictPh:'مثال: تكرار عدم الحضور',until:'حتى تاريخ',restrictBtn:'تقييد الحساب',liftRestrict:'رفع التقييد',restrictDone:'تم التقييد، وأُلغي {n} من حجوزاته القادمة.',liftDone:'تم رفع التقييد',
+  warningsT:'الإنذارات',noWarnings:'لا توجد إنذارات.',warnPh:'سبب الإنذار…',sendWarn:'إرسال إنذار',warnHint:'يُحفظ الإنذار في سجل الطالب ويصله كرسالة.',warnSent:'تم إرسال الإنذار رقم {n}',
+  deleteStu:'حذف الحساب',deleteHint:'يحذف الحساب نهائياً مع حجوزاته ورسائله وإنذاراته. لا يمكن التراجع.',typeSid:'اكتب {sid} للتأكيد',deleteForever:'حذف نهائي',studentDeleted:'تم حذف الحساب',renameStaff:'تعديل الاسم',
   netTitle:'لا اتصال',netText:'تعذّر الوصول إلى قاعدة البيانات. تُعاد المحاولة تلقائياً؛ تحقق من اتصالك بالإنترنت.',
   libFail:'تعذّر تحميل مكتبة الاتصال بقاعدة البيانات. تحقق من الاتصال بالإنترنت ثم أعد تحميل الصفحة.',
   setupTitle:'الإعداد مطلوب',setupText:'لم يُربط التطبيق بقاعدة البيانات بعد. افتح الملف config.js وضع فيه رابط مشروع Supabase والمفتاح العام، كما هو موضح في ملف README.',bootTitle:'إنشاء أول مدير نظام',bootHint:'لا يوجد مدير نظام بعد. أنشئ حسابك الآن؛ بعد ذلك لن تظهر هذه الشاشة.',createAdmin:'إنشاء الحساب والدخول',bootDone:'تم إنشاء مدير النظام بالفعل. سجّل الدخول.',confirmOff:'تأكيد البريد مفعّل في Supabase. يجب إيقاف خيار Confirm email (راجع README).',
@@ -466,6 +475,11 @@ const T={
   convos:'Conversations',newConvo:'New conversation',sidPh:'Student ID',open2:'Open',noConvos:'No conversations yet.',pickConvo:'Pick a conversation or start a new one.',
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
   installApp:'Install app',thisHour:'This hour',msgAllDay:'Message everyone today',
+  errRestricted:'Your account is currently restricted from booking. Contact the center management.',restrictedT:'Your account is restricted from booking',restrictedUntil:'You can\u2019t book until {d}.',restrictedOpen:'You can\u2019t book until the management lifts the restriction.',restrictedHint:'For questions, message the management below.',myWarnings:'Warnings',warningN:'Warning #{n}',
+  stuAccHint2:'Student accounts are managed by system admins only: edit details, restrict booking, warnings, delete, and temporary passwords.',allStudents:'All',restrictedF:'Restricted',warnedF:'Has warnings',refresh:'Refresh',warnsN:'{n} warnings',manageStu:'Manage',
+  editDetails:'Edit details',sidChangeNote:'Changing the student ID changes the username the student signs in with, and updates their bookings.',sidTaken2:'This student ID belongs to another student.',restriction:'Booking restriction',restrictHint:'A restriction blocks booking, cancels upcoming bookings and notifies the student with the reason.',restrictPh:'e.g. repeated no-shows',until:'Until',restrictBtn:'Restrict account',liftRestrict:'Lift restriction',restrictDone:'Restricted; {n} upcoming bookings cancelled.',liftDone:'Restriction lifted',
+  warningsT:'Warnings',noWarnings:'No warnings.',warnPh:'Reason for the warning…',sendWarn:'Send warning',warnHint:'The warning is kept in the student\u2019s record and sent to them as a message.',warnSent:'Warning #{n} sent',
+  deleteStu:'Delete account',deleteHint:'Permanently deletes the account with its bookings, messages and warnings. This can\u2019t be undone.',typeSid:'Type {sid} to confirm',deleteForever:'Delete permanently',studentDeleted:'Account deleted',renameStaff:'Rename',
   netTitle:'Offline',netText:'Can\u2019t reach the database. Retrying automatically; check your internet connection.',
   libFail:'The database library couldn\u2019t load. Check your internet connection and reload the page.',
   setupTitle:'Setup needed',setupText:'The app isn\u2019t connected to a database yet. Open config.js and add your Supabase project URL and public key, as described in the README.',bootTitle:'Create the first system admin',bootHint:'No system admin exists yet. Create your account now; this screen won\u2019t appear again.',createAdmin:'Create account and sign in',bootDone:'A system admin already exists. Please sign in.',confirmOff:'Email confirmation is on in Supabase. Turn off "Confirm email" (see the README).',
@@ -501,7 +515,7 @@ const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.par
 
 /* ---------- Stores ---------- */
 /* ---------- Supabase store ---------- */
-const CRC_ERRS=['dup','full','closed_day','slot_closed','bad_slot','bad_section','locked','not_found','forbidden','no_student','too_far'];
+const CRC_ERRS=['restricted','dup','full','closed_day','slot_closed','bad_slot','bad_section','locked','not_found','forbidden','no_student','too_far'];
 function errCode(e){const m=String((e&&(e.message||e.error_description||e.msg))||'');return CRC_ERRS.find(c=>m.includes(c))||'generic'}
 function makeSupabaseStore(C){
   const opts=key=>({auth:{storageKey:key,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
@@ -514,7 +528,7 @@ function makeSupabaseStore(C){
   const bk=r=>({code:r.code,studentName:r.student_name,studentId:r.student_id,uid:r.uid,section:r.section,slotId:r.slot_id,date:r.date,status:r.status,createdAt:ms(r.created_at)});
   const dk=r=>r.desk_status?{status:r.desk_status,code:r.code,date:r.date,sid:r.student_id,by:r.desk_by,byName:r.desk_by_name,at:ms(r.desk_at)}:null;
   const split=rows=>{const b={},d={};(rows||[]).forEach(r=>{b[r.id]=bk(r);const x=dk(r);if(x)d[r.id]=x});return{b,d}};
-  const stuRow=r=>({id:r.id,sid:r.sid,name:r.name,college:r.college||'',phone:r.phone||'',mustChange:!!r.must_change,createdAt:ms(r.created_at)});
+  const stuRow=r=>({id:r.id,sid:r.sid,name:r.name,college:r.college||'',phone:r.phone||'',mustChange:!!r.must_change,createdAt:ms(r.created_at),restricted:!!r.restricted,restrictedUntil:r.restricted_until||'',restrictReason:r.restrict_reason||''});
   const msgRow=r=>({id:r.id,text:r.text,at:ms(r.at),from:r.from_role,byName:r.by_name,byU:r.by_user,read:r.read,code:r.code});
   let chn=0;
   // fetch now, refetch on any change to the table (and on a timer as a safety net)
@@ -635,7 +649,16 @@ function makeSupabaseStore(C){
     },
     watchStaffList(cb){return live(stf,{table:'staff',fetch:async()=>must(await stf.from('staff').select('*').order('created_at')).map(r=>({id:r.id,u:r.username,name:r.name,role:r.role,active:r.active})),cb})},
     async accountBySid(sid){const r=must(await stf.from('students').select('id,sid,name').eq('sid',sid).maybeSingle());return r?{uid:r.id,sid:r.sid,name:r.name}:null},
-    async listAccounts(){return must(await stf.from('students').select('*').order('name')).map(r=>({uid:r.id,...stuRow(r)}))},
+    async listAccounts(){
+      const rows=must(await stf.from('students').select('*').order('name'));
+      const w=must(await stf.from('warnings').select('student'));const cnt={};w.forEach(x=>{cnt[x.student]=(cnt[x.student]||0)+1});
+      return rows.map(r=>({uid:r.id,...stuRow(r),warnings:cnt[r.id]||0}));
+    },
+    watchWarnings(uid,cb){const c=uid===stuUid?stu:stf;return live(c,{table:'warnings',filter:`student=eq.${uid}`,fetch:async()=>must(await c.from('warnings').select('*').eq('student',uid).order('at',{ascending:false})).map(r=>({id:r.id,reason:r.reason,byName:r.by_name,at:ms(r.at)})),cb})},
+    async adminRestrict(uid,on,until,reason){return must(await stf.rpc('admin_restrict',{p_student:uid,p_on:on,p_until:until||null,p_reason:reason||''}))},
+    async adminWarn(uid,reason){return must(await stf.rpc('admin_warn',{p_student:uid,p_reason:reason}))},
+    async adminDeleteWarning(id){must(await stf.rpc('admin_delete_warning',{p_id:id}))},
+    reloadStudent(){return reloadStudent()},
 
     /* messages */
     watchMessages(uid,cb){const c=uid===stuUid?stu:stf;return live(c,{table:'messages',filter:`student=eq.${uid}`,fetch:async()=>must(await c.from('messages').select('*').eq('student',uid).order('at',{ascending:false}).limit(100)).map(msgRow),cb})},
@@ -817,7 +840,10 @@ function Student({L,lang,store,canWrite,say,tick,me,uid,msgs,pending,onStuOut}){
   const per=counts(b,d,date,slotId);
   const slot=slotId!=null?slotById(slotId):null;
   const closed=closedInfo(date);
-  const open=!!slot&&canBookSlot(date,slot);
+  const blocked=!!me&&me.restricted&&(!me.restrictedUntil||me.restrictedUntil>=todayISO());
+  const open=!!slot&&canBookSlot(date,slot)&&!blocked;
+  const [warns,setWarns]=useState([]);
+  useEffect(()=>{if(!me){setWarns([]);return}return store.watchWarnings(me.id,setWarns)},[store,me&&me.id]);
   const [form,setForm]=useState(null); // section id
   const [needAuth,setNeedAuth]=useState(null); // section id waiting for sign-in
   const [ticket,setTicket]=useState(null); // {id,b}
@@ -830,6 +856,8 @@ function Student({L,lang,store,canWrite,say,tick,me,uid,msgs,pending,onStuOut}){
   if(pending&&!needAuth) return html`<${StudentAuth} L=${L} store=${store} forceChange=${true}/>`;
   return html`
   ${me?html`<div className="row signbar"><span className="hint">${L.welcome}</span><b>${me.name}</b><span className="hint mono" dir="ltr">${me.sid}</span><button className="btn" style=${{marginInlineStart:'auto'}} onClick=${onStuOut}>${L.signOut}</button></div>
+    ${blocked&&html`<section className="panel closedBox"><h2>${L.restrictedT}</h2><p style=${{margin:0}}>${me.restrictedUntil?L.restrictedUntil.replace('{d}',longDate(me.restrictedUntil,lang)):L.restrictedOpen}${me.restrictReason?html`<br/><b>${L.reason}:</b> ${me.restrictReason}`:''}</p><p className="hint" style=${{margin:0}}>${L.restrictedHint}</p></section>`}
+    ${warns.length>0&&html`<details className="panel prof warnBox"><summary><h2>${L.myWarnings} <span className="pill s-warn num">${warns.length}</span></h2></summary><div className="mine" style=${{marginTop:'12px'}}>${warns.map((w,i)=>html`<div key=${w.id} className="mineRow"><div style=${{minWidth:0}}><b>${L.warningN.replace('{n}',warns.length-i)}</b> · <span className="hint num">${fmtStamp(w.at,lang)}</span><div style=${{overflowWrap:'anywhere'}}>${w.reason}</div></div></div>`)}</div></details>`}
     <${Inbox} L=${L} lang=${lang} store=${store} uid=${uid} me=${me} msgs=${msgs} say=${say}/>`:
   html`<section className="panel row" style=${{justifyContent:'space-between'}}><span className="hint" style=${{flex:'1 1 260px'}}>${L.accHint}</span><button className="btn pri" onClick=${()=>setNeedAuth('__')}>${L.signInStu}</button></section>`}
   <section className="rail panel">
@@ -886,7 +914,7 @@ function BookForm({L,lang,store,canWrite,me,uid,date,slot,section,onClose,onBook
     const data={code:makeCode(date),studentName:me.name,studentId:me.sid,uid,section:section.id,slotId:slot.id,date,status:'booked',createdAt:Date.now()};
     try{
       const r=await store.claim(id,data);
-      if(!r.ok){setBusy(false);if(r.reason==='dup')setDup(true);return setErr({dup:L.errDup,full:L.errFull,slot_closed:L.errClosed,closed_day:L.errClosedDay}[r.reason]||L.errGeneric)}
+      if(!r.ok){setBusy(false);if(r.reason==='dup')setDup(true);if(r.reason==='restricted')store.reloadStudent();return setErr({dup:L.errDup,full:L.errFull,slot_closed:L.errClosed,closed_day:L.errClosedDay,restricted:L.errRestricted}[r.reason]||L.errGeneric)}
       onBooked(r.id||id,r.row||data);
     }catch(ex){setBusy(false);setErr(ex&&ex.code==='invalid_argument'?L.errPerm:L.errGeneric)}
   }
@@ -1016,7 +1044,7 @@ function EditBooking({L,lang,store,bk,say,onClose}){
   async function save(){
     setErr('');const sl=slotById(slotId);if(!canBookSlot(bk.date,sl)) return setErr(L.errClosed);
     setBusy(true);
-    try{const r=await store.moveBooking(bk.id,{slotId,section});if(!r.ok){setBusy(false);return setErr(r.reason==='full'?L.errFull:L.errBusy)}say(L.bookingUpdated);onClose()}catch(x){setErr(L.errGeneric)}
+    try{const r=await store.moveBooking(bk.id,{slotId,section});if(!r.ok){setBusy(false);if(r.reason==='restricted')store.reloadStudent();return setErr({full:L.errFull,restricted:L.errRestricted,slot_closed:L.errClosed}[r.reason]||L.errBusy)}say(L.bookingUpdated);onClose()}catch(x){setErr(L.errGeneric)}
     setBusy(false);
   }
   return html`<${Modal} onClose=${onClose} wide=${true}>
@@ -1129,29 +1157,116 @@ function MessageModal({L,store,targets,who,onClose,say}){
 
 function StudentAccountsAdmin({L,lang,store,say}){
   const [list,setList]=useState(null);const [q,setQ]=useState('');const [issued,setIssued]=useState(null);const [busy,setBusy]=useState('');const [err,setErr]=useState('');
+  const [manage,setManage]=useState(null);const [filter,setFilter]=useState('all');
   const load=async()=>{setErr('');try{setList(await store.listAccounts())}catch(e){setErr(L.errGeneric)}};
   async function issue(a){
     setBusy(a.uid);setErr('');
     try{const r=await store.adminOp('resetStudentPassword',{id:a.uid});if(!r.ok) throw r;setIssued({uid:a.uid,sid:a.sid,name:a.name,pw:r.password});await load()}catch(e){setErr(L.errGeneric)}
     setBusy('');
   }
+  const active=a=>a.restricted&&(!a.restrictedUntil||a.restrictedUntil>=todayISO());
   const qq=q.trim().toLowerCase();
-  const rows=(list||[]).filter(a=>a.sid&&(!qq||a.sid.includes(qq)||(a.name||'').toLowerCase().includes(qq))).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const rows=(list||[]).filter(a=>a.sid&&(!qq||a.sid.includes(qq)||(a.name||'').toLowerCase().includes(qq)))
+    .filter(a=>filter==='all'||(filter==='restricted'&&active(a))||(filter==='warned'&&a.warnings>0));
   const fmt=t=>t?new Date(t).toLocaleDateString(lang==='ar'?'ar-OM-u-nu-latn':'en-GB'):'';
   return html`<section className="panel sgrid">
-    <div><h2>${L.stuAccounts}</h2><p className="hint" style=${{margin:'4px 0 0'}}>${L.stuAccHint}</p></div>
+    <div><h2>${L.stuAccounts}</h2><p className="hint" style=${{margin:'4px 0 0'}}>${L.stuAccHint2}</p></div>
     ${list===null?html`<div><button className="btn" onClick=${load}>${L.loadAcc}</button></div>`:html`
-      <input id="sa-search" className="search" placeholder=${L.findSid} value=${q} onInput=${e=>setQ(e.target.value)}/>
+      <div className="row">
+        <input id="sa-search" className="search" style=${{flex:'1 1 220px'}} placeholder=${L.findSid} value=${q} onInput=${e=>setQ(e.target.value)}/>
+        <div className="seg">${[['all',L.allStudents],['restricted',L.restrictedF],['warned',L.warnedF]].map(([k,t])=>html`<button key=${k} aria-pressed=${filter===k} onClick=${()=>setFilter(k)}>${t}</button>`)}</div>
+        <button className="btn ghost" onClick=${load}>${L.refresh}</button>
+      </div>
       ${issued&&html`<div className="banner ok" style=${{display:'grid',gap:'6px'}}><span>${issued.name} · <span className="mono" dir="ltr">${issued.sid}</span></span>
         <span>${L.tempPw}: <b className="mono" dir="ltr" style=${{fontSize:'18px',letterSpacing:'.08em'}}>${issued.pw}</b> <button className="btn" onClick=${async()=>{try{await navigator.clipboard.writeText(issued.pw);say(L.copied)}catch(e){}}}>${L.copyPw}</button></span>
         <span className="hint">${L.tempPwNote}</span></div>`}
-      ${rows.length===0?html`<p className="hint" style=${{margin:0}}>${L.noStudents}</p>`:html`<div className="zlist">${rows.slice(0,50).map(a=>html`<div key=${a.uid} className="srow">
+      <p className="hint num" style=${{margin:0}}>${rows.length} / ${(list||[]).length}</p>
+      ${rows.length===0?html`<p className="hint" style=${{margin:0}}>${L.noStudents}</p>`:html`<div className="zlist">${rows.slice(0,100).map(a=>html`<div key=${a.uid} className="srow">
         <div style=${{minWidth:0}}><b>${a.name}</b> <span className="hint mono" dir="ltr">${a.sid}</span><div className="hint">${[a.college,a.phone,L.registered+' '+fmt(a.createdAt)].filter(Boolean).join(' · ')}</div></div>
-        ${a.mustChange&&html`<span className="pill s-warn">${L.tempPw}</span>`}
-        <button className="btn" style=${{marginInlineStart:'auto'}} disabled=${busy===a.uid} onClick=${()=>issue(a)}>${busy===a.uid?'…':L.issuePw}</button>
+        ${active(a)&&html`<span className="pill s-bad">${L.restrictedF}</span>`}
+        ${a.warnings>0&&html`<span className="pill s-warn num">${L.warnsN.replace('{n}',a.warnings)}</span>`}
+        ${a.mustChange&&html`<span className="pill s-mut">${L.tempPw}</span>`}
+        <div className="row" style=${{gap:'6px',marginInlineStart:'auto'}}>
+          <button className="btn pri" onClick=${()=>setManage(a)}>${L.manageStu}</button>
+          <button className="btn" disabled=${busy===a.uid} onClick=${()=>issue(a)}>${busy===a.uid?'…':L.issuePw}</button>
+        </div>
       </div>`)}</div>`}`}
     ${err&&html`<div className="err">${err}</div>`}
+    ${manage&&html`<${StudentManage} L=${L} lang=${lang} store=${store} say=${say} st=${manage} onClose=${()=>setManage(null)} onChanged=${load}/>`}
   </section>`;
+}
+
+function StudentManage({L,lang,store,say,st,onClose,onChanged}){
+  const [f,setF]=useState({name:st.name,sid:st.sid,college:st.college||'',phone:st.phone||''});
+  const [rs,setRs]=useState({reason:'',until:''});const [wr,setWr]=useState('');
+  const [warns,setWarns]=useState([]);const [busy,setBusy]=useState('');const [err,setErr]=useState('');const [info,setInfo]=useState('');
+  const [cur,setCur]=useState(st);const [delAsk,setDelAsk]=useState(false);const [delSid,setDelSid]=useState('');
+  useEffect(()=>store.watchWarnings(st.uid,setWarns),[store,st.uid]);
+  const active=cur.restricted&&(!cur.restrictedUntil||cur.restrictedUntil>=todayISO());
+  const errMsg=c=>({sid_taken:L.sidTaken2,bad_sid:L.errId,bad_name:L.errName,forbidden:L.ownerOnly}[c]||L.errGeneric);
+  const run=async(key,fn)=>{setBusy(key);setErr('');setInfo('');try{await fn()}catch(e){setErr(errMsg(e&&e.error)||L.errGeneric)}setBusy('')};
+  const set=k=>e=>{const v=k==='sid'?e.target.value.replace(/\D/g,''):e.target.value;setF(s=>({...s,[k]:v}))};
+  const saveDetails=()=>run('save',async()=>{
+    const name=f.name.trim().replace(/\s+/g,' ');if(name.length<3) throw {error:'bad_name'};if(!/^\d{4,12}$/.test(f.sid)) throw {error:'bad_sid'};
+    const r=await store.adminOp('updateStudent',{id:st.uid,name,sid:f.sid,college:f.college,phone:f.phone});if(!r.ok) throw r;
+    setCur(c=>({...c,name,sid:f.sid,college:f.college,phone:f.phone}));say(L.profileSaved);onChanged();
+  });
+  const restrict=()=>run('restrict',async()=>{
+    const n=await store.adminRestrict(st.uid,true,rs.until,rs.reason.trim());
+    setCur(c=>({...c,restricted:true,restrictedUntil:rs.until,restrictReason:rs.reason.trim()}));setInfo(L.restrictDone.replace('{n}',n||0));onChanged();
+  });
+  const lift=()=>run('lift',async()=>{await store.adminRestrict(st.uid,false,null,'');setCur(c=>({...c,restricted:false,restrictedUntil:'',restrictReason:''}));say(L.liftDone);onChanged()});
+  const warn=()=>run('warn',async()=>{if(!wr.trim()) return;const n=await store.adminWarn(st.uid,wr.trim());setWr('');say(L.warnSent.replace('{n}',n));onChanged()});
+  const delWarn=id=>run('dw'+id,async()=>{await store.adminDeleteWarning(id);onChanged()});
+  const del=()=>run('del',async()=>{const r=await store.adminOp('deleteStudent',{id:st.uid});if(!r.ok) throw r;say(L.studentDeleted);onChanged();onClose()});
+  return html`<${Modal} onClose=${onClose} wide=${true}>
+    <div className="mh"><div><h2>${cur.name}</h2><span className="hint mono" dir="ltr">${cur.sid}</span></div><button className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
+    ${err&&html`<div className="err" role="alert">${err}</div>`}
+    ${info&&html`<div className="banner ok">${info}</div>`}
+
+    <section className="mgSec">
+      <h3>${L.editDetails}</h3>
+      <div className="two">
+        <div className="field"><label htmlFor="sm-n">${L.fullName}</label><input id="sm-n" value=${f.name} onInput=${set('name')}/></div>
+        <div className="field"><label htmlFor="sm-sid">${L.studentId}</label><input id="sm-sid" dir="ltr" className="num" inputMode="numeric" maxLength="12" value=${f.sid} onInput=${set('sid')}/></div>
+        <div className="field"><label htmlFor="sm-c">${L.college}</label><input id="sm-c" value=${f.college} onInput=${set('college')}/></div>
+        <div className="field"><label htmlFor="sm-ph">${L.phone}</label><input id="sm-ph" dir="ltr" inputMode="tel" value=${f.phone} onInput=${set('phone')}/></div>
+      </div>
+      ${f.sid!==cur.sid&&html`<p className="hint" style=${{margin:0}}>${L.sidChangeNote}</p>`}
+      <div><button className="btn pri" disabled=${!!busy} onClick=${saveDetails}>${busy==='save'?'…':L.saveChanges}</button></div>
+    </section>
+
+    <section className="mgSec">
+      <h3>${L.restriction} ${active?html`<span className="pill s-bad">${L.restrictedF}</span>`:html`<span className="pill s-ok">${L.active}</span>`}</h3>
+      ${active?html`
+        <p style=${{margin:0}}>${cur.restrictedUntil?L.restrictedUntil.replace('{d}',longDate(cur.restrictedUntil,lang)):L.restrictedOpen}${cur.restrictReason?html`<br/><b>${L.reason}:</b> ${cur.restrictReason}`:''}</p>
+        <div><button className="btn" disabled=${!!busy} onClick=${lift}>${busy==='lift'?'…':L.liftRestrict}</button></div>`:html`
+        <p className="hint" style=${{margin:0}}>${L.restrictHint}</p>
+        <div className="two">
+          <div className="field"><label htmlFor="sm-rr">${L.reason}</label><input id="sm-rr" placeholder=${L.restrictPh} value=${rs.reason} onInput=${e=>{const v=e.target.value;setRs(s=>({...s,reason:v}))}}/></div>
+          <div className="field"><label htmlFor="sm-ru">${L.until} <span className="hint">(${L.optional})</span></label><input id="sm-ru" type="date" dir="ltr" min=${todayISO()} value=${rs.until} onInput=${e=>{const v=e.target.value;setRs(s=>({...s,until:v}))}}/></div>
+        </div>
+        <div><button className="btn bad" disabled=${!!busy} onClick=${restrict}>${busy==='restrict'?'…':L.restrictBtn}</button></div>`}
+    </section>
+
+    <section className="mgSec">
+      <h3>${L.warningsT} <span className="pill s-warn num">${warns.length}</span></h3>
+      ${warns.length===0?html`<p className="hint" style=${{margin:0}}>${L.noWarnings}</p>`:html`<div className="mine">${warns.map((w,i)=>html`<div key=${w.id} className="mineRow">
+        <div style=${{minWidth:0}}><b>${L.warningN.replace('{n}',warns.length-i)}</b> · <span className="hint num">${fmtStamp(w.at,lang)} · ${w.byName}</span><div style=${{overflowWrap:'anywhere'}}>${w.reason}</div></div>
+        <button className="btn ghost" disabled=${!!busy} onClick=${()=>delWarn(w.id)}>${L.remove}</button>
+      </div>`)}</div>`}
+      <div className="composer"><textarea id="sm-w" className="search" rows="2" placeholder=${L.warnPh} value=${wr} onInput=${e=>setWr(e.target.value)}></textarea><button className="btn bad" disabled=${!!busy||!wr.trim()} onClick=${warn}>${busy==='warn'?'…':L.sendWarn}</button></div>
+      <p className="hint" style=${{margin:0}}>${L.warnHint}</p>
+    </section>
+
+    <section className="mgSec dangerSec">
+      <h3>${L.deleteStu}</h3>
+      <p className="hint" style=${{margin:0}}>${L.deleteHint}</p>
+      ${delAsk?html`<div className="row"><input id="sm-del" className="search" style=${{flex:'1 1 180px'}} dir="ltr" placeholder=${L.typeSid.replace('{sid}',cur.sid)} value=${delSid} onInput=${e=>setDelSid(e.target.value.trim())}/>
+        <button className="btn bad" disabled=${delSid!==cur.sid||!!busy} onClick=${del}>${busy==='del'?'…':L.deleteForever}</button><button className="btn" onClick=${()=>{setDelAsk(false);setDelSid('')}}>${L.cancel}</button></div>`
+      :html`<div><button className="btn bad" onClick=${()=>setDelAsk(true)}>${L.deleteStu}</button></div>`}
+    </section>
+  </${Modal}>`;
 }
 
 const BADGE_CLS={active:'s-ok',expired:'s-mut','checked-in':'s-acc',cancelled:'s-bad','no-show':'s-bad',booked:'s-warn'};
@@ -1550,7 +1665,7 @@ function Login({L,store}){
 function StaffAdmin({L,store,staff,say,who}){
   const [nu,setNu]=useState({u:'',name:'',p:'',p2:'',role:'staff'});
   const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
-  const [pwFor,setPwFor]=useState(null);const [pw,setPw]=useState({p:'',p2:''});const [rmFor,setRmFor]=useState(null);
+  const [pwFor,setPwFor]=useState(null);const [pw,setPw]=useState({p:'',p2:''});const [rmFor,setRmFor]=useState(null);const [ren,setRen]=useState(null);
   const errMsg=c=>({last_admin:L.lastAdmin,username_taken:L.vUserDup,bad_username:L.vUser,weak_password:L.vPw,bad_name:L.vDisp}[c]||L.errGeneric);
   const op=async(action,payload,msg)=>{setBusy(true);setErr('');const r=await store.adminOp(action,payload);setBusy(false);if(!r.ok){setErr(errMsg(r.error));return false}say(msg);return true};
   const checkPw=(a,b)=>a.length<8?L.vPw:a!==b?L.vPwMatch:'';
@@ -1571,11 +1686,16 @@ function StaffAdmin({L,store,staff,say,who}){
       <span className=${'pill '+(roleOf(x)==='admin'?'s-acc':'s-ok')}>${roleOf(x)==='admin'?L.roleAdmin:L.roleStaff}</span>
       ${x.active===false&&html`<span className="pill s-mut">${L.disabled}</span>`}
       <div className="row" style=${{gap:'6px',marginInlineStart:'auto'}}>
+        <button className="btn" disabled=${busy} onClick=${()=>setRen(ren&&ren.id===x.id?null:{id:x.id,name:x.name})}>${L.renameStaff}</button>
         <button className="btn" disabled=${busy} onClick=${()=>{setPwFor(pwFor===x.id?null:x.id);setPw({p:'',p2:''});setErr('')}}>${L.resetPw}</button>
         <button className="btn" disabled=${busy} onClick=${()=>op('updateStaff',{id:x.id,role:roleOf(x)==='admin'?'staff':'admin'},L.staffSaved)}>${roleOf(x)==='admin'?L.makeStaff:L.makeAdmin}</button>
         <button className="btn" disabled=${busy} onClick=${()=>op('updateStaff',{id:x.id,active:x.active===false},L.staffSaved)}>${x.active!==false?L.disable:L.enable}</button>
         ${rmFor===x.id?html`<button className="btn bad" disabled=${busy} onClick=${()=>{setRmFor(null);op('deleteStaff',{id:x.id},L.staffRemoved)}}>${L.removeAsk}</button>`:html`<button className="btn bad" onClick=${()=>setRmFor(x.id)}>${L.remove}</button>`}
       </div>
+      ${ren&&ren.id===x.id&&html`<div className="pwrow">
+        <input id=${'rn-'+x.id} className="search" value=${ren.name} onInput=${e=>{const v=e.target.value;setRen(r=>({...r,name:v}))}}/>
+        <button className="btn pri" disabled=${busy||ren.name.trim().length<2} onClick=${async()=>{if(await op('updateStaff',{id:x.id,name:ren.name.trim()},L.staffSaved))setRen(null)}}>${L.saveChanges}</button>
+      </div>`}
       ${pwFor===x.id&&html`<div className="pwrow">
         <input id=${'pw1-'+x.id} className="search" type="password" dir="ltr" autoComplete="new-password" placeholder=${L.newPw} value=${pw.p} onInput=${e=>{const v=e.target.value;setPw(s=>({...s,p:v}))}}/>
         <input id=${'pw2-'+x.id} className="search" type="password" dir="ltr" autoComplete="new-password" placeholder=${L.confirmPw} value=${pw.p2} onInput=${e=>{const v=e.target.value;setPw(s=>({...s,p2:v}))}}/>

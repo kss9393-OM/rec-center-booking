@@ -8,6 +8,8 @@
 //   setStaffPassword     set a staff member's password      (system admin only)
 //   deleteStaff          remove a management account        (system admin only)
 //   resetStudentPassword issue a temporary student password (system admin only)
+//   updateStudent        edit a student's name / ID / college / phone (system admin only)
+//   deleteStudent        delete a student account and all its data   (system admin only)
 // The function checks the caller itself, so deploy it with JWT verification off.
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -19,6 +21,8 @@ const cors = {
 };
 
 const STAFF_DOMAIN = Deno.env.get("STAFF_EMAIL_DOMAIN") ?? "staff.example.com";
+const STUDENT_DOMAIN = Deno.env.get("STUDENT_EMAIL_DOMAIN") ?? "students.example.com";
+const SID = /^[0-9]{4,12}$/;
 const USERNAME = /^[a-z0-9._-]{3,24}$/;
 
 const json = (body: unknown, status = 200) =>
@@ -133,6 +137,50 @@ Deno.serve(async (req) => {
       // the app sees must_change on the student's next load and forces a new password
       await admin.from("students").update({ must_change: true }).eq("id", id);
       return json({ ok: true, password });
+    }
+
+    case "updateStudent": {
+      const { data: st } = await admin.from("students").select("*").eq("id", id).maybeSingle();
+      if (!st) return json({ error: "not_found" }, 404);
+      const patch: Record<string, unknown> = {};
+      if (typeof body.name === "string") {
+        const name = body.name.trim().replace(/\s+/g, " ");
+        if (name.length < 3 || name.length > 120) return json({ error: "bad_name" }, 400);
+        patch.name = name;
+      }
+      if (typeof body.college === "string") patch.college = body.college.trim().slice(0, 120);
+      if (typeof body.phone === "string") patch.phone = body.phone.trim().slice(0, 30);
+      const newSid = typeof body.sid === "string" ? body.sid.trim() : st.sid;
+      if (!SID.test(newSid)) return json({ error: "bad_sid" }, 400);
+      if (newSid !== st.sid) {
+        const { data: taken } = await admin.from("students").select("id").eq("sid", newSid).maybeSingle();
+        if (taken) return json({ error: "sid_taken" }, 409);
+        const { error: eAuth } = await admin.auth.admin.updateUserById(id, { email: `${newSid}@${STUDENT_DOMAIN}`, email_confirm: true });
+        if (eAuth) return json({ error: "sid_taken", detail: eAuth.message }, 409);
+        patch.sid = newSid;
+      }
+      const { error } = await admin.from("students").update(patch).eq("id", id);
+      if (error) return json({ error: "failed", detail: error.message }, 500);
+      // keep bookings and the conversation list in step with the new details
+      const { data: bks } = await admin.from("bookings").select("id,date").eq("uid", id);
+      for (const b of bks ?? []) {
+        const upd: Record<string, unknown> = { student_id: newSid };
+        if (patch.name) upd.student_name = patch.name;
+        const newId = `${b.date}_${newSid}`;
+        if (newId !== b.id) upd.id = newId;
+        await admin.from("bookings").update(upd).eq("id", b.id);
+      }
+      await admin.from("threads").update({ sid: newSid, ...(patch.name ? { name: patch.name } : {}) }).eq("student", id);
+      return json({ ok: true });
+    }
+
+    case "deleteStudent": {
+      const { data: st } = await admin.from("students").select("id").eq("id", id).maybeSingle();
+      if (!st) return json({ error: "not_found" }, 404);
+      // removing the sign-in account removes the student's profile, bookings, messages and warnings
+      const { error } = await admin.auth.admin.deleteUser(id);
+      if (error) return json({ error: "failed", detail: error.message }, 500);
+      return json({ ok: true });
     }
 
     default:
