@@ -8,6 +8,7 @@
 //   setStaffPassword     set a staff member's password      (system admin only)
 //   deleteStaff          remove a management account        (system admin only)
 //   resetStudentPassword issue a temporary student password (system admin only)
+// The function checks the caller itself, so deploy it with JWT verification off.
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
@@ -73,6 +74,7 @@ Deno.serve(async (req) => {
 
   // Everything else: the caller must be an active system admin.
   const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!jwt) return json({ error: "forbidden" }, 403);
   const { data: who } = await admin.auth.getUser(jwt);
   if (!who?.user) return json({ error: "forbidden" }, 403);
   const { data: me } = await admin.from("staff").select("*").eq("id", who.user.id).maybeSingle();

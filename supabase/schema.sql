@@ -124,7 +124,7 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 create or replace function public._rand4() returns text
-language sql volatile as $$
+language sql volatile set search_path = public as $$
   select string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 1 + floor(random() * 32)::int, 1), '')
   from generate_series(1, 4);
 $$;
@@ -336,6 +336,19 @@ create policy threads_read on public.threads for select using (public.is_staff()
 -- ---------- Permissions ----------
 
 revoke execute on function public._on_message() from public, anon, authenticated;
+-- internal helpers are only called inside other functions
+revoke execute on function public._check_slot(text, int, text) from public, anon, authenticated;
+revoke execute on function public._taken(text, int, text, text) from public, anon, authenticated;
+revoke execute on function public._rand4() from public, anon, authenticated;
+-- signed-in actions: no access for visitors
+revoke execute on function public.book(text, int, text) from public, anon;
+revoke execute on function public.move_booking(text, int, text) from public, anon;
+revoke execute on function public.cancel_booking(text) from public, anon;
+revoke execute on function public.update_profile(text, text, text) from public, anon;
+revoke execute on function public.clear_must_change() from public, anon;
+revoke execute on function public.mark_read(bigint) from public, anon;
+revoke execute on function public.desk_mark(text, text) from public, anon;
+revoke execute on function public.mark_thread_seen(uuid) from public, anon;
 grant execute on function public.availability(text) to anon, authenticated;
 grant execute on function public.needs_bootstrap() to anon, authenticated;
 grant execute on function public.book(text, int, text) to authenticated;

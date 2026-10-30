@@ -40,8 +40,9 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 1. **Edge Functions** ثم **Deploy a new function** ثم **Via Editor**.
 2. سمِّ الدالة `admin` بالضبط.
 3. احذف المحتوى الافتراضي، والصق محتوى `supabase/functions/admin/index.ts`، ثم **Deploy**.
+4. من إعدادات الدالة أوقف **Verify JWT** (الدالة تتحقق من المستخدم بنفسها).
 
-(أو عبر سطر الأوامر: `supabase functions deploy admin`)
+(أو عبر سطر الأوامر: `supabase functions deploy admin --no-verify-jwt`)
 
 ### ٥. ربط التطبيق
 1. **Project Settings** ثم **API**.
@@ -89,8 +90,9 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 1. **Edge Functions** → **Deploy a new function** → **Via Editor**.
 2. Name it exactly `admin`.
 3. Replace the template with the contents of `supabase/functions/admin/index.ts` and click **Deploy**.
+4. In the function's settings, turn **Verify JWT** off (the function checks the caller itself).
 
-(Or from the CLI: `supabase functions deploy admin`)
+(Or from the CLI: `supabase functions deploy admin --no-verify-jwt`)
 
 ### 5. Connect the app
 1. **Project Settings** → **API**.
