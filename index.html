@@ -245,6 +245,8 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -377,6 +379,7 @@ const T={
   msgTab:'الرسائل',chatTitle:'المراسلة مع الإدارة',chatHint:'اكتب استفسارك وسيرد عليك أحد الموظفين هنا.',chatPh:'اكتب رسالة…',you2:'أنت',staffLbl:'الإدارة',
   convos:'المحادثات',newConvo:'محادثة جديدة',sidPh:'الرقم الجامعي',open2:'فتح',noConvos:'لا توجد محادثات بعد.',pickConvo:'اختر محادثة أو ابدأ واحدة جديدة.',
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
+  setupTitle:'الإعداد مطلوب',setupText:'لم يُربط التطبيق بقاعدة البيانات بعد. افتح الملف config.js وضع فيه رابط مشروع Supabase والمفتاح العام، كما هو موضح في ملف README.',bootTitle:'إنشاء أول مدير نظام',bootHint:'لا يوجد مدير نظام بعد. أنشئ حسابك الآن؛ بعد ذلك لن تظهر هذه الشاشة.',createAdmin:'إنشاء الحساب والدخول',bootDone:'تم إنشاء مدير النظام بالفعل. سجّل الدخول.',confirmOff:'تأكيد البريد مفعّل في Supabase. يجب إيقاف خيار Confirm email (راجع README).',
   manage:'الإدارة',sysAdmin:'مدير النظام',rights:'جميع الحقوق محفوظة لدى Services Squire LLC.',deskTab:'الاستقبال',settingsTab:'الإعدادات',
   role:'الصلاحية',roleStaff:'موظف استقبال',roleAdmin:'مدير النظام',roleStaffD:'الاستقبال فقط: الحضور والرسائل والتقارير',roleAdminD:'كل شيء: الاستقبال والإعدادات والحسابات',
   lastAdmin:'لا يمكن إيقاف أو حذف أو تخفيض آخر مدير نظام مفعّل.',makeAdmin:'جعله مدير نظام',makeStaff:'جعله موظفاً',you:'أنت',
@@ -444,6 +447,7 @@ const T={
   msgTab:'Messages',chatTitle:'Messages with the center',chatHint:'Write your question and a staff member will reply here.',chatPh:'Write a message…',you2:'You',staffLbl:'Center staff',
   convos:'Conversations',newConvo:'New conversation',sidPh:'Student ID',open2:'Open',noConvos:'No conversations yet.',pickConvo:'Pick a conversation or start a new one.',
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
+  setupTitle:'Setup needed',setupText:'The app isn\u2019t connected to a database yet. Open config.js and add your Supabase project URL and public key, as described in the README.',bootTitle:'Create the first system admin',bootHint:'No system admin exists yet. Create your account now; this screen won\u2019t appear again.',createAdmin:'Create account and sign in',bootDone:'A system admin already exists. Please sign in.',confirmOff:'Email confirmation is on in Supabase. Turn off "Confirm email" (see the README).',
   manage:'Management',sysAdmin:'System admin',rights:'All rights reserved by Services Squire LLC.',deskTab:'Reception',settingsTab:'Settings',
   role:'Role',roleStaff:'Reception staff',roleAdmin:'System admin',roleStaffD:'Reception only: check-ins, messages and reports',roleAdminD:'Everything: reception, settings and accounts',
   lastAdmin:'You can’t disable, remove or demote the last active system admin.',makeAdmin:'Make admin',makeStaff:'Make staff',you:'you',
@@ -475,133 +479,150 @@ function longDate(iso,lang){const d=new Date(iso+'T12:00:00');return d.toLocaleD
 const ls={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 
 /* ---------- Stores ---------- */
-function makeLocalStore(){
-  const KEY='crc.demo.v1';
-  let st=ls.get(KEY,{bookings:{},desk:{}});
-  const subs=new Set();
-  const save=()=>{ls.set(KEY,st);subs.forEach(f=>f())};
-  const byDate=(o,date)=>Object.fromEntries(Object.entries(o).filter(([k,v])=>v.date===date));
-  try{window.addEventListener('storage',e=>{if(e.key===KEY){st=ls.get(KEY,st);subs.forEach(f=>f())}})}catch(e){}
-  return{
-    mode:'local',
-    subscribe(date,cb){const f=()=>cb(byDate(st.bookings,date),byDate(st.desk,date),true);subs.add(f);f();return()=>subs.delete(f)},
-    async fetchDay(date){return{b:byDate(st.bookings,date),d:byDate(st.desk,date)}},
-    async claim(id,data){
-      const ex=st.bookings[id];
-      if(ex&&effStatus(ex,st.desk[id])!=='cancelled') return{ok:false,reason:'dup'};
-      const cnt=Object.entries(byDate(st.bookings,data.date)).filter(([k,b])=>b.slotId===data.slotId&&b.section===data.section&&occupies(effStatus(b,st.desk[k]))).length;
-      if(cnt>=secById(data.section).cap) return{ok:false,reason:'full'};
-      st.bookings[id]=data;save();return{ok:true};
-    },
-    async cancelBooking(id){if(st.bookings[id]){st.bookings[id]={...st.bookings[id],status:'cancelled'};save()}},
-    async setDesk(id,v){st.desk[id]=v;save()},
-    async clearDesk(id){delete st.desk[id];save()},
-    async getOne(id){return{b:st.bookings[id]||null,d:st.desk[id]||null}},
-    subscribeConfig(cb){const f=()=>cb(st.cfg||null);subs.add(f);f();return()=>subs.delete(f)},
-    async saveConfig(c){st.cfg=c;save()},
-    subscribeStaff(cb){const f=()=>cb((st.staff&&st.staff.users)||[]);subs.add(f);f();return()=>subs.delete(f)},
-    async saveStaff(users){st.staff={users};save()},
-    // student accounts
-    watchAccount(uid,cb){const f=()=>cb(((st.accounts||{})[uid])||null);subs.add(f);f();return()=>subs.delete(f)},
-    async saveAccount(uid,a){st.accounts={...(st.accounts||{}),[uid]:a};save()},
-    async claimSid(sid,uid){const o=(st.sids||{})[sid];if(o&&o.uid!==uid) return false;st.sids={...(st.sids||{}),[sid]:{uid,at:Date.now()}};save();return true},
-    async accountBySid(sid){const s=(st.sids||{})[sid];return s?{uid:s.uid,...((st.accounts||{})[s.uid]||{})}:null},
-    watchMessages(uid,cb){const f=()=>{const m=((st.msgs||{})[uid])||{};cb(Object.entries(m).map(([id,x])=>({id,...x})).sort((a,b)=>b.at-a.at))};subs.add(f);f();return()=>subs.delete(f)},
-    async sendMessage(uid,msg,meta){
-      const all=st.msgs||{};const id='m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);st.msgs={...all,[uid]:{...(all[uid]||{}),[id]:msg}};
-      const th=(st.threads||{})[uid]||{uid,staffSeenAt:0};
-      const patch={sid:(meta&&meta.sid)||th.sid||'',name:(meta&&meta.name)||th.name||'',lastAt:msg.at,lastText:String(msg.text).slice(0,140),lastFrom:msg.from||'staff'};
-      if(msg.from!=='student') patch.staffSeenAt=msg.at;
-      st.threads={...(st.threads||{}),[uid]:{...th,...patch}};save();
-    },
-    watchThreads(cb){const f=()=>cb(Object.entries(st.threads||{}).map(([uid,t])=>({...t,uid})).sort((a,b)=>b.lastAt-a.lastAt));subs.add(f);f();return()=>subs.delete(f)},
-    async markThreadSeen(uid){const t=(st.threads||{})[uid];if(t){st.threads[uid]={...t,staffSeenAt:Date.now()};save()}},
-    async markRead(uid,id){const m=(st.msgs||{})[uid];if(m&&m[id]){m[id]={...m[id],read:true};save()}},
-    async adminResetPassword(uid,salt,hash){const a=(st.accounts||{})[uid];if(a){st.accounts[uid]={...a,salt,hash,mustChange:true,resetAt:Date.now()};save()}},
-    async listAccounts(){return Object.entries(st.accounts||{}).map(([uid,a])=>({uid,...a}))},
-    watchMyBookings(sid,cb){const f=()=>{const b={},d={};Object.entries(st.bookings).forEach(([k,x])=>{if(x.studentId===sid){b[k]=x;if(st.desk[k])d[k]=st.desk[k]}});cb(b,d)};subs.add(f);f();return()=>subs.delete(f)},
-    async moveBooking(id,patch){
-      const x=st.bookings[id];if(!x) return{ok:false,reason:'gone'};
-      const cnt=Object.entries(byDate(st.bookings,x.date)).filter(([k,b])=>k!==id&&b.slotId===patch.slotId&&b.section===patch.section&&occupies(effStatus(b,st.desk[k]))).length;
-      if(cnt>=secById(patch.section).cap) return{ok:false,reason:'full'};
-      st.bookings[id]={...x,...patch,editedAt:Date.now()};save();return{ok:true};
-    },
-  };
-}
-function makeDbStore(db){
-  const toMap=s=>{const o={};s.docs.forEach(x=>{if(x.exists)o[x.id]=x.data()});return o};
+/* ---------- Supabase store ---------- */
+const CRC_ERRS=['dup','full','closed_day','slot_closed','bad_slot','bad_section','locked','not_found','forbidden','no_student','too_far'];
+function errCode(e){const m=String((e&&(e.message||e.error_description||e.msg))||'');return CRC_ERRS.find(c=>m.includes(c))||'generic'}
+function makeSupabaseStore(C){
+  const opts=key=>({auth:{storageKey:key,persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  const stu=supabase.createClient(C.supabaseUrl,C.supabaseAnonKey,opts('crc-student'));
+  const stf=supabase.createClient(C.supabaseUrl,C.supabaseAnonKey,opts('crc-staff'));
+  const sEmail=sid=>`${sid}@${C.studentEmailDomain||'students.example.com'}`;
+  const tEmail=u=>`${u}@${C.staffEmailDomain||'staff.example.com'}`;
+  let staffOn=false, stuUid=null, reloadStudent=()=>{}, reloadStaff=()=>{};
+  const ms=t=>t?Date.parse(t):0;
+  const bk=r=>({code:r.code,studentName:r.student_name,studentId:r.student_id,uid:r.uid,section:r.section,slotId:r.slot_id,date:r.date,status:r.status,createdAt:ms(r.created_at)});
+  const dk=r=>r.desk_status?{status:r.desk_status,code:r.code,date:r.date,sid:r.student_id,by:r.desk_by,byName:r.desk_by_name,at:ms(r.desk_at)}:null;
+  const split=rows=>{const b={},d={};(rows||[]).forEach(r=>{b[r.id]=bk(r);const x=dk(r);if(x)d[r.id]=x});return{b,d}};
+  const stuRow=r=>({id:r.id,sid:r.sid,name:r.name,college:r.college||'',phone:r.phone||'',mustChange:!!r.must_change,createdAt:ms(r.created_at)});
+  const msgRow=r=>({id:r.id,text:r.text,at:ms(r.at),from:r.from_role,byName:r.by_name,byU:r.by_user,read:r.read,code:r.code});
+  let chn=0;
+  // fetch now, refetch on any change to the table (and on a timer as a safety net)
+  function live(client,{table,filter,fetch,cb,poll=20000}){
+    let alive=true;
+    const run=async()=>{try{const v=await fetch();if(alive)cb(v)}catch(e){console.warn(e)}};
+    run();
+    const ch=client.channel('crc'+(++chn)+Math.random().toString(36).slice(2,7))
+      .on('postgres_changes',{event:'*',schema:'public',table,...(filter?{filter}:{})},()=>run()).subscribe();
+    const t=setInterval(run,poll);
+    return()=>{alive=false;clearInterval(t);try{client.removeChannel(ch)}catch(e){}};
+  }
+  const must=({data,error})=>{if(error) throw error;return data};
   return{
     mode:'shared',
+    setStaffMode(on){staffOn=on},
+
+    /* settings */
+    subscribeConfig(cb){return live(stu,{table:'config',poll:60000,fetch:async()=>{const r=must(await stu.from('config').select('data').eq('id',1).maybeSingle());return r?r.data:null},cb})},
+    async saveConfig(c){const r=must(await stf.from('config').update({data:c,updated_at:new Date().toISOString()}).eq('id',1).select('id'));if(!r||!r.length) throw {code:'invalid_argument'}},
+
+    /* bookings */
     subscribe(date,cb){
-      let b={},d={},gb=false;
-      const u1=db.collection('bookings').where('date','==',date).onSnapshot(s=>{b=toMap(s);gb=true;cb(b,d,true)},e=>console.warn(e));
-      const u2=db.collection('desk').where('date','==',date).onSnapshot(s=>{d=toMap(s);if(gb)cb(b,d,true)},e=>console.warn(e));
-      return()=>{u1();u2()};
-    },
-    async fetchDay(date){
-      const [bs,ds]=await Promise.all([db.collection('bookings').where('date','==',date).get(),db.collection('desk').where('date','==',date).get()]);
-      return{b:toMap(bs),d:toMap(ds)};
+      if(staffOn) return live(stf,{table:'bookings',filter:`date=eq.${date}`,fetch:async()=>split(must(await stf.from('bookings').select('*').eq('date',date))),cb:v=>cb(v.b,v.d)});
+      // students and visitors see seat counts only
+      return live(stu,{table:'bookings',filter:`date=eq.${date}`,poll:15000,fetch:async()=>{
+        const rows=must(await stu.rpc('availability',{p_date:date}));const b={},d={};let k=0;
+        rows.forEach(r=>{for(let i=0;i<r.n;i++){const id=(i===0&&r.own_id)||('_a'+(k++));b[id]={_syn:true,date,slotId:r.slot_id,section:r.section,status:'booked',code:''};if(r.eff==='checked-in')d[id]={status:'checked-in',code:''}}});
+        return{b,d};
+      },cb:v=>cb(v.b,v.d)});
     },
     async claim(id,data){
-      const ref=db.doc('bookings/'+id);
-      const lease=await ref.acquire({holder:data.code,ttlMs:6000});
-      if(!lease.acquired) return{ok:false,reason:'busy'};
-      const {b,d}=await this.fetchDay(data.date);
-      if(b[id]&&effStatus(b[id],d[id])!=='cancelled') return{ok:false,reason:'dup'};
-      const cnt=Object.entries(b).filter(([k,x])=>x.slotId===data.slotId&&x.section===data.section&&occupies(effStatus(x,d[k]))).length;
-      if(cnt>=secById(data.section).cap) return{ok:false,reason:'full'};
-      await ref.set(data);
-      return{ok:true};
-    },
-    async cancelBooking(id){await db.doc('bookings/'+id).update({status:'cancelled',cancelledAt:Date.now()})},
-    async setDesk(id,v){await db.doc('desk/'+id).set(v)},
-    async clearDesk(id){await db.doc('desk/'+id).delete()},
-    async getOne(id){const [b,d]=await Promise.all([db.doc('bookings/'+id).get(),db.doc('desk/'+id).get()]);return{b:b.exists?b.data():null,d:d.exists?d.data():null}},
-    subscribeConfig(cb){return db.doc('config/main').onSnapshot(s=>cb(s.exists?s.data():null),e=>{console.warn(e);cb(null)})},
-    async saveConfig(c){await db.doc('config/main').set(c)},
-    subscribeStaff(cb){return db.doc('staff/accounts').onSnapshot(s=>cb(s.exists&&Array.isArray(s.data().users)?s.data().users:[]),e=>{console.warn(e);cb([])})},
-    async saveStaff(users){await db.doc('staff/accounts').set({users,updatedAt:Date.now()})},
-    // student accounts live in each viewer's own subtree: accounts/<platform uid>
-    watchAccount(uid,cb){return db.doc('accounts/'+uid).onSnapshot(s=>cb(s.exists?s.data():null),e=>{console.warn(e);cb(null)})},
-    async saveAccount(uid,a){await db.doc('accounts/'+uid).set(a)},
-    async claimSid(sid,uid){
-      const ref=db.doc('sids/'+sid);
-      const lease=await ref.acquire({holder:uid,ttlMs:5000});if(!lease.acquired) return false;
-      const s=await ref.get();if(s.exists&&s.data().uid&&s.data().uid!==uid) return false;
-      await ref.set({uid,at:Date.now()});return true;
-    },
-    async accountBySid(sid){const s=await db.doc('sids/'+sid).get();if(!s.exists) return null;const uid=s.data().uid;const a=await db.doc('accounts/'+uid).get();return{uid,...(a.exists?a.data():{})}},
-    // inbox/<uid>/msgs : staff write, the student reads and marks read
-    watchMessages(uid,cb){return db.collection('inbox/'+uid+'/msgs').orderBy('at','desc').limit(100).onSnapshot(s=>cb(s.docs.filter(x=>x.exists).map(x=>({id:x.id,...x.data()}))),e=>{console.warn(e);cb([])})},
-    // a conversation = inbox/<uid>/msgs ; threads/<uid> is the index staff browse
-    async sendMessage(uid,msg,meta){
-      await db.collection('inbox/'+uid+'/msgs').add(msg);
-      const ref=db.doc('threads/'+uid);
-      const patch={sid:(meta&&meta.sid)||'',name:(meta&&meta.name)||'',lastAt:msg.at,lastText:String(msg.text).slice(0,140),lastFrom:msg.from||'staff'};
-      if(msg.from!=='student') patch.staffSeenAt=msg.at;
-      try{const s=await ref.get();if(s.exists) await ref.update(patch);else await ref.set({uid,staffSeenAt:0,...patch})}catch(e){console.warn(e)}
-    },
-    async markRead(uid,id){await db.doc('inbox/'+uid+'/msgs/'+id).update({read:true})},
-    watchThreads(cb){return db.collection('threads').orderBy('lastAt','desc').limit(300).onSnapshot(s=>cb(s.docs.filter(x=>x.exists).map(x=>({uid:x.id,...x.data()}))),e=>{console.warn(e);cb([])})},
-    async markThreadSeen(uid){try{await db.doc('threads/'+uid).update({staffSeenAt:Date.now()})}catch(e){}},
-    // management only (rules: accounts write = owner)
-    async adminResetPassword(uid,salt,hash){await db.doc('accounts/'+uid).update({salt,hash,mustChange:true,resetAt:Date.now()})},
-    async listAccounts(){const s=await db.collection('accounts').limit(1000).get();return s.docs.filter(x=>x.exists).map(x=>({uid:x.id,...x.data()}))},
-    watchMyBookings(sid,cb){
-      let b={},d={},gb=false;
-      const u1=db.collection('bookings').where('studentId','==',sid).onSnapshot(s=>{b=toMap(s);gb=true;cb(b,d)},e=>console.warn(e));
-      const u2=db.collection('desk').where('sid','==',sid).onSnapshot(s=>{d=toMap(s);if(gb)cb(b,d)},e=>console.warn(e));
-      return()=>{u1();u2()};
+      const {data:r,error}=await stu.rpc('book',{p_date:data.date,p_slot:data.slotId,p_section:data.section});
+      if(error) return{ok:false,reason:errCode(error)};
+      return{ok:true,id:r.id,row:bk(r)};
     },
     async moveBooking(id,patch){
-      const ref=db.doc('bookings/'+id);
-      const lease=await ref.acquire({holder:id+Date.now(),ttlMs:6000});if(!lease.acquired) return{ok:false,reason:'busy'};
-      const cur=await ref.get();if(!cur.exists) return{ok:false,reason:'gone'};
-      const x=cur.data();const {b,d}=await this.fetchDay(x.date);
-      const cnt=Object.entries(b).filter(([k,y])=>k!==id&&y.slotId===patch.slotId&&y.section===patch.section&&occupies(effStatus(y,d[k]))).length;
-      if(cnt>=secById(patch.section).cap) return{ok:false,reason:'full'};
-      await ref.update({...patch,editedAt:Date.now()});return{ok:true};
+      const {error}=await stu.rpc('move_booking',{p_id:id,p_slot:patch.slotId,p_section:patch.section});
+      return error?{ok:false,reason:errCode(error)}:{ok:true};
     },
+    async cancelBooking(id){must(await stu.rpc('cancel_booking',{p_id:id}))},
+    watchMyBookings(sid,cb){return live(stu,{table:'bookings',filter:`student_id=eq.${sid}`,fetch:async()=>split(must(await stu.from('bookings').select('*').eq('student_id',sid))),cb:v=>cb(v.b,v.d)})},
+    async setDesk(id,v){must(await stf.rpc('desk_mark',{p_id:id,p_status:v.status}))},
+    async clearDesk(id){must(await stf.rpc('desk_mark',{p_id:id,p_status:null}))},
+
+    /* students: sign-up, sign-in, profile */
+    onStudent(cb){
+      let alive=true;
+      const load=async session=>{
+        if(!session){stuUid=null;if(alive)cb(null);return}
+        const {data}=await stu.from('students').select('*').eq('id',session.user.id).maybeSingle();
+        if(!alive) return;
+        if(!data){stuUid=null;cb(null);return}
+        stuUid=data.id;cb(stuRow(data));
+      };
+      reloadStudent=async()=>{const {data}=await stu.auth.getSession();await load(data.session)};
+      stu.auth.getSession().then(({data})=>load(data.session));
+      const {data:{subscription}}=stu.auth.onAuthStateChange((ev,session)=>{if(ev==='TOKEN_REFRESHED'||ev==='INITIAL_SESSION') return;setTimeout(()=>load(session),0)});
+      return()=>{alive=false;subscription.unsubscribe()};
+    },
+    async studentRegister({sid,name,college,phone,password}){
+      const {data,error}=await stu.auth.signUp({email:sEmail(sid),password});
+      if(error) return{ok:false,reason:/registered|exists/i.test(error.message)?'sidTaken':'generic'};
+      if(!data.session) return{ok:false,reason:'confirm'};
+      const {error:e2}=await stu.from('students').insert({id:data.user.id,sid,name,college,phone});
+      if(e2){await stu.auth.signOut();return{ok:false,reason:/duplicate|unique/i.test(e2.message)?'sidTaken':'generic'}}
+      await reloadStudent();return{ok:true};
+    },
+    async studentSignIn(sid,password){
+      const {data,error}=await stu.auth.signInWithPassword({email:sEmail(sid),password});
+      if(error) return{ok:false,reason:'bad'};
+      const {data:row}=await stu.from('students').select('*').eq('id',data.user.id).maybeSingle();
+      if(!row){await stu.auth.signOut();return{ok:false,reason:'bad'}}
+      await reloadStudent();return{ok:true,mustChange:!!row.must_change};
+    },
+    async studentSetPassword(password){
+      const {error}=await stu.auth.updateUser({password});if(error) return{ok:false};
+      await stu.rpc('clear_must_change');await reloadStudent();return{ok:true};
+    },
+    async studentChangePassword(sid,current,password){
+      const {error}=await stu.auth.signInWithPassword({email:sEmail(sid),password:current});
+      if(error) return{ok:false,reason:'wrongCurrent'};
+      const {error:e2}=await stu.auth.updateUser({password});return e2?{ok:false,reason:'generic'}:{ok:true};
+    },
+    async updateProfile(p){must(await stu.rpc('update_profile',{p_name:p.name,p_college:p.college,p_phone:p.phone}));await reloadStudent()},
+    async studentSignOut(){await stu.auth.signOut()},
+
+    /* staff: sign-in and accounts */
+    onStaff(cb){
+      let alive=true;
+      const load=async session=>{
+        if(!session){if(alive)cb(null);return}
+        const {data}=await stf.from('staff').select('*').eq('id',session.user.id).maybeSingle();
+        if(!alive) return;
+        if(!data||!data.active){await stf.auth.signOut();cb(null);return}
+        cb({id:data.id,u:data.username,name:data.name,role:data.role});
+      };
+      reloadStaff=async()=>{const {data}=await stf.auth.getSession();await load(data.session)};
+      stf.auth.getSession().then(({data})=>load(data.session));
+      const {data:{subscription}}=stf.auth.onAuthStateChange((ev,session)=>{if(ev==='TOKEN_REFRESHED'||ev==='INITIAL_SESSION') return;setTimeout(()=>load(session),0)});
+      return()=>{alive=false;subscription.unsubscribe()};
+    },
+    async staffSignIn(username,password){
+      const {data,error}=await stf.auth.signInWithPassword({email:tEmail(username),password});
+      if(error) return{ok:false};
+      const {data:row}=await stf.from('staff').select('active').eq('id',data.user.id).maybeSingle();
+      if(!row||!row.active){await stf.auth.signOut();return{ok:false}}
+      await reloadStaff();return{ok:true};
+    },
+    async staffSignOut(){await stf.auth.signOut()},
+    async needsBootstrap(){return must(await stu.rpc('needs_bootstrap'))},
+    async adminOp(action,payload){
+      const {data,error}=await stf.functions.invoke('admin',{body:{action,...payload}});
+      if(error){let code='failed';try{const j=await error.context.json();code=j.error||code}catch(e){}return{ok:false,error:code}}
+      return{ok:true,...(data||{})};
+    },
+    watchStaffList(cb){return live(stf,{table:'staff',fetch:async()=>must(await stf.from('staff').select('*').order('created_at')).map(r=>({id:r.id,u:r.username,name:r.name,role:r.role,active:r.active})),cb})},
+    async accountBySid(sid){const r=must(await stf.from('students').select('id,sid,name').eq('sid',sid).maybeSingle());return r?{uid:r.id,sid:r.sid,name:r.name}:null},
+    async listAccounts(){return must(await stf.from('students').select('*').order('name')).map(r=>({uid:r.id,...stuRow(r)}))},
+
+    /* messages */
+    watchMessages(uid,cb){const c=uid===stuUid?stu:stf;return live(c,{table:'messages',filter:`student=eq.${uid}`,fetch:async()=>must(await c.from('messages').select('*').eq('student',uid).order('at',{ascending:false}).limit(100)).map(msgRow),cb})},
+    async sendMessage(uid,msg){
+      const c=msg.from==='student'?stu:stf;
+      must(await c.from('messages').insert({student:uid,text:msg.text,from_role:msg.from==='student'?'student':'staff',by_name:msg.byName||'',by_user:msg.byU||'',code:msg.code||'',read:msg.from==='student'}));
+    },
+    async markRead(uid,id){must(await stu.rpc('mark_read',{p_id:id}))},
+    watchThreads(cb){return live(stf,{table:'threads',fetch:async()=>must(await stf.from('threads').select('*').order('last_at',{ascending:false}).limit(300)).map(r=>({uid:r.student,sid:r.sid,name:r.name,lastAt:ms(r.last_at),lastText:r.last_text,lastFrom:r.last_from,staffSeenAt:ms(r.staff_seen_at)})),cb})},
+    async markThreadSeen(uid){try{await stf.rpc('mark_thread_seen',{p_student:uid})}catch(e){}},
   };
 }
 
@@ -647,85 +668,98 @@ function App(){
   const [lang,setLang]=useState(()=>ls.get('crc.lang','ar'));
   const L=T[lang];
   useEffect(()=>{document.documentElement.lang=lang;document.documentElement.dir=L.dir;ls.set('crc.lang',lang)},[lang]);
-  const [store,setStore]=useState(null);
-  const [canDesk,setCanDesk]=useState(false);
-  const [canWrite,setCanWrite]=useState(true);
-  const [isOwner,setIsOwner]=useState(false);
-  const [staff,setStaff]=useState([]);const [staffReady,setStaffReady]=useState(false);
-  const [session,setSession]=useState(()=>sess.get());
-  const [uid,setUid]=useState(null);
-  const [acct,setAcct]=useState(null);
-  const [stuSess,setStuSess]=useState(()=>ls.get(STU_KEY,null));
-  const [msgs,setMsgs]=useState([]);
-  const [view,setView]=useState(()=>({'#manage':'manage','#desk':'manage','#settings':'manage'}[location.hash]||'student'));
+  const C=window.CRC_CONFIG||{};
+  const configured=!!(C.supabaseUrl&&C.supabaseAnonKey&&!/YOUR-/.test(C.supabaseUrl+C.supabaseAnonKey)&&window.supabase);
+  const [store]=useState(()=>configured?makeSupabaseStore(C):null);
+  const [view,setView]=useState(()=>location.hash==='#manage'?'manage':'student');
   const [toast,setToast]=useState('');
   const tick=useTick(30000);
   const say=useCallback(m=>{setToast(m);clearTimeout(say.t);say.t=setTimeout(()=>setToast(''),2600)},[]);
-
-  useEffect(()=>{let alive=true;(async()=>{
-    let db=null,user=null;
-    try{ if(window.claude&&claude.use){[db,user]=await Promise.all([claude.use('db'),claude.use('user')])} }catch(e){}
-    if(!alive) return;
-    if(db){
-      try{const ce=user?await user.canEdit():false;setCanDesk(!!ce);setIsOwner(user?!!(await user.isOwner()):false);const w=user?await user.can('data.write'):null;setCanWrite(w!==false)}catch(e){}
-      try{setUid(user?await user.id():null)}catch(e){}
-      setStore(makeDbStore(db));
-    }else{setCanDesk(true);setIsOwner(true);setUid('local-device');setStore(makeLocalStore())}
-  })();
-  const fb=setTimeout(()=>{if(alive)setStore(s=>s||(setCanDesk(true),setIsOwner(true),setUid('local-device'),makeLocalStore()))},11000);
-  return()=>{alive=false;clearTimeout(fb)}},[]);
-
-  const hashView=()=>({'#manage':'manage','#desk':'manage','#settings':'manage'}[location.hash]||'student');
-  useEffect(()=>{const f=()=>setView(hashView());window.addEventListener('hashchange',f);return()=>window.removeEventListener('hashchange',f)},[]);
-  const go=v=>{setView(v);try{history.replaceState(null,'',v==='student'?'#student':'#'+v)}catch(e){}};
+  useEffect(()=>{const f=()=>setView(location.hash==='#manage'?'manage':'student');window.addEventListener('hashchange',f);return()=>window.removeEventListener('hashchange',f)},[]);
+  const go=v=>{setView(v);try{history.replaceState(null,'',v==='manage'?'#manage':'#student')}catch(e){}};
 
   // shared settings
   const [cfg,setCfg]=useState(()=>CFG);
   const [cfgReady,setCfgReady]=useState(false);
   useEffect(()=>{if(!store) return;return store.subscribeConfig(c=>{setCfg(applyCfg(c));setCfgReady(true)})},[store]);
   useEffect(()=>{document.title=cfg.name[lang]||cfg.name.en},[cfg,lang]);
-  useEffect(()=>{if(!store||!canDesk) return;return store.subscribeStaff(u=>{setStaff(u);setStaffReady(true)})},[store,canDesk]);
-  const signOut=()=>{sess.clear();setSession(null)};
-  const deskAcc=staffReady&&session&&sessionValid(session,staff)?staff.find(u=>u.u===session.u):null;
-  const deskUser=deskAcc?{u:deskAcc.u,name:deskAcc.name,role:roleOf(deskAcc)}:null;
-  const hasAdmin=staff.some(u=>roleOf(u)==='admin'&&u.active!==false);
-  const ownerOpen=staffReady&&!hasAdmin&&isOwner&&!deskUser;
 
-  // student account (lives in this viewer's own subtree)
-  useEffect(()=>{if(!store||!uid){setAcct(null);return}return store.watchAccount(uid,a=>setAcct(a))},[store,uid]);
-  const me=acct&&stuSess&&stuSess.uid===uid&&stuSess.exp>Date.now()&&acct.sid===stuSess.sid&&acct.hash&&acct.hash.slice(0,12)===stuSess.v&&!acct.mustChange?acct:null;
-  useEffect(()=>{if(!store||!uid||!me){setMsgs([]);return}return store.watchMessages(uid,setMsgs)},[store,uid,me&&me.sid]);
+  // management session
+  const [staffMe,setStaffMe]=useState(undefined);
+  useEffect(()=>{if(!store) return;return store.onStaff(setStaffMe)},[store]);
+  useEffect(()=>{if(store) store.setStaffMode(!!staffMe)},[store,staffMe]);
+  const [boot,setBoot]=useState(null);
+  useEffect(()=>{if(store&&view==='manage'&&staffMe===null) store.needsBootstrap().then(setBoot).catch(()=>setBoot(false))},[store,view,staffMe]);
+  const [staff,setStaff]=useState([]);
+  useEffect(()=>{if(!store||!staffMe) return;return store.watchStaffList(setStaff)},[store,staffMe&&staffMe.id]);
+
+  // student session
+  const [stu,setStu]=useState(undefined);
+  useEffect(()=>{if(!store) return;return store.onStudent(setStu)},[store]);
+  const me=stu&&!stu.mustChange?stu:null;
+  const uid=me&&me.id;
+  const [msgs,setMsgs]=useState([]);
+  useEffect(()=>{if(!store||!uid){setMsgs([]);return}return store.watchMessages(uid,setMsgs)},[store,uid]);
   const unread=msgs.filter(m=>m.from!=='student'&&!m.read).length;
-  const onStuIn=s=>{ls.set(STU_KEY,s);setStuSess(s)};
-  const onStuOut=()=>{try{localStorage.removeItem(STU_KEY)}catch(e){}setStuSess(null)};
 
-  return html`
-  <header className="top"><div className="wrap topin">
-    <div className="brand">
+  const brand=html`<div className="brand">
       ${cfg.logo?html`<img className="logo" src=${cfg.logo} alt=""/>`:html`<div className="mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>`}
       <div style=${{minWidth:0}}><h1>${cfg.name[lang]||cfg.name.ar||cfg.name.en}</h1><small>${L.brandSub}</small></div>
-    </div>
-    ${canDesk&&html`<div className="tabs" role="group">
+    </div>`;
+  const langBtn=html`<button className="lang" onClick=${()=>setLang(lang==='ar'?'en':'ar')} aria-label="Language">${lang==='ar'?'English':'العربية'}</button>`;
+  const footer=html`<footer className="foot"><div className="wrap"><span>© ${new Date().getFullYear()} Services Squire LLC</span><span>${L.rights}</span></div></footer>`;
+
+  if(!store) return html`<header className="top"><div className="wrap topin">${brand}${langBtn}</div></header>
+    <main className="wrap"><section className="panel loginBox" style=${{maxWidth:'560px',display:'grid',gap:'10px'}}><h2 style=${{margin:0}}>${L.setupTitle}</h2><p style=${{margin:0}}>${L.setupText}</p></section></main>${footer}`;
+
+  let body;
+  if(!cfgReady) body=html`<div className="empty">…</div>`;
+  else if(view==='manage'){
+    if(staffMe===undefined) body=html`<div className="empty">…</div>`;
+    else if(staffMe) body=html`<${Manage} L=${L} lang=${lang} store=${store} say=${say} tick=${tick} cfg=${cfg} staff=${staff} who=${staffMe} onSignOut=${()=>store.staffSignOut()}/>`;
+    else if(boot) body=html`<${Bootstrap} L=${L} lang=${lang} store=${store} onDone=${()=>setBoot(false)}/>`;
+    else body=html`<${Login} L=${L} store=${store}/>`;
+  } else {
+    body=html`<${Student} L=${L} lang=${lang} store=${store} canWrite=${true} say=${say} tick=${tick} cfg=${cfg} me=${me} uid=${uid} msgs=${msgs} pending=${stu&&stu.mustChange} onStuOut=${()=>store.studentSignOut()}/>`;
+  }
+  return html`
+  <header className="top"><div className="wrap topin">
+    ${brand}
+    <div className="tabs" role="group">
       <button aria-pressed=${view==='student'} onClick=${()=>go('student')}>${L.student}${unread>0&&html` <span className="dot num">${unread}</span>`}</button>
       <button aria-pressed=${view==='manage'} onClick=${()=>go('manage')}>${L.manage}</button>
-    </div>`}
-    <button className="lang" onClick=${()=>setLang(lang==='ar'?'en':'ar')} aria-label="Language">${lang==='ar'?'English':'العربية'}</button>
+    </div>
+    ${langBtn}
   </div></header>
-  <main className="wrap">
-    ${store&&html`<div className=${'banner'+(store.mode==='shared'?' ok':'')}><b>${store.mode==='shared'?L.liveB:L.demoB}</b><span>${store.mode==='shared'?L.shared:L.demo}</span></div>`}
-    ${!store||!cfgReady?html`<div className="empty">…</div>`:
-      view!=='manage'||!canDesk?html`<${Student} L=${L} lang=${lang} store=${store} canWrite=${canWrite} say=${say} tick=${tick} cfg=${cfg} me=${me} uid=${uid} acct=${acct} msgs=${msgs} onStuIn=${onStuIn} onStuOut=${onStuOut}/>`:
-      !staffReady?html`<div className="empty">…</div>`:
-      ownerOpen?html`<div className="banner">${L.ownerBypass}</div><${Manage} L=${L} lang=${lang} store=${store} say=${say} tick=${tick} cfg=${cfg} staff=${staff} who=${{u:'',name:L.sysAdmin,role:'admin',bootstrap:true}}/>`:
-      !staff.length?html`<div className="panel empty">${L.noAccounts}</div>`:
-      !deskUser?html`<${Login} L=${L} staff=${staff} onIn=${s=>{sess.set(s);setSession(s)}}/>`:
-      html`<${Manage} L=${L} lang=${lang} store=${store} say=${say} tick=${tick} cfg=${cfg} staff=${staff} who=${deskUser} onSignOut=${signOut}/>`}
-  </main>
-  <footer className="foot"><div className="wrap">
-    <span>© ${new Date().getFullYear()} Services Squire LLC</span>
-    <span>${L.rights}</span>
-  </div></footer>
+  <main className="wrap">${body}</main>
+  ${footer}
   ${toast&&html`<div className="toast" role="status"><div>${toast}</div></div>`}`;
+}
+
+/* First system admin (only while none exists) */
+function Bootstrap({L,lang,store,onDone}){
+  const [f,setF]=useState({u:'',n:'',p:'',p2:''});const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
+  const set=k=>e=>{const v=e.target.value;setF(s=>({...s,[k]:v}))};
+  async function submit(e){
+    e.preventDefault();setErr('');const u=f.u.trim().toLowerCase();
+    if(!/^[a-z0-9._-]{3,24}$/.test(u)) return setErr(L.vUser);
+    if(!f.n.trim()) return setErr(L.vDisp);
+    if(f.p.length<8) return setErr(L.vPw);if(f.p!==f.p2) return setErr(L.vPwMatch);
+    setBusy(true);
+    const r=await store.adminOp('bootstrap',{username:u,name:f.n.trim(),password:f.p});
+    if(!r.ok){setBusy(false);return setErr(r.error==='forbidden'?L.bootDone:L.errGeneric)}
+    await store.staffSignIn(u,f.p);setBusy(false);onDone();
+  }
+  return html`<section className="panel loginBox" style=${{maxWidth:'480px'}}><form onSubmit=${submit} style=${{display:'grid',gap:'12px'}}>
+    <${AuthBrand} lang=${lang} sub=${L.bootTitle}/>
+    <p className="hint" style=${{margin:0,textAlign:'center'}}>${L.bootHint}</p>
+    <div className="field"><label htmlFor="bt-u">${L.username}</label><input id="bt-u" dir="ltr" autoCapitalize="none" autoComplete="username" value=${f.u} onInput=${set('u')}/></div>
+    <div className="field"><label htmlFor="bt-n">${L.displayName}</label><input id="bt-n" value=${f.n} onInput=${set('n')}/></div>
+    <div className="field"><label htmlFor="bt-p">${L.password}</label><input id="bt-p" type="password" dir="ltr" autoComplete="new-password" value=${f.p} onInput=${set('p')}/></div>
+    <div className="field"><label htmlFor="bt-p2">${L.confirmPw}</label><input id="bt-p2" type="password" dir="ltr" autoComplete="new-password" value=${f.p2} onInput=${set('p2')}/></div>
+    ${err&&html`<div className="err" role="alert">${err}</div>`}
+    <button className="btn pri" disabled=${busy}>${busy?'…':L.createAdmin}</button>
+  </form></section>`;
 }
 
 function useDay(store,date){
@@ -741,7 +775,7 @@ function counts(b,d,date,slotId){
 function stateClass(left,cap){if(left<=0) return 's-bad';if(left/cap<=0.3) return 's-warn';return 's-ok'}
 
 /* ---------- Student ---------- */
-function Student({L,lang,store,canWrite,say,tick,me,uid,acct,msgs,onStuIn,onStuOut}){
+function Student({L,lang,store,canWrite,say,tick,me,uid,msgs,pending,onStuOut}){
   const goAccount=()=>{const el=document.getElementById('my-bookings');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})};
   const days=useMemo(()=>{const a=[];const d=new Date();for(let i=0;i<7;i++){const x=new Date(d);x.setDate(d.getDate()+i);a.push(isoOf(x))}return a},[tick>0&&todayISO()]);
   const [date,setDate]=useState(days[0]);
@@ -764,6 +798,7 @@ function Student({L,lang,store,canWrite,say,tick,me,uid,acct,msgs,onStuIn,onStuO
   const pickZone=id=>{if(me) setForm(id);else setNeedAuth(id)};
   useEffect(()=>{if(me&&needAuth){if(needAuth!=='__')setForm(needAuth);setNeedAuth(null)}},[me,needAuth]);
 
+  if(pending&&!needAuth) return html`<${StudentAuth} L=${L} store=${store} forceChange=${true}/>`;
   return html`
   ${me?html`<div className="row signbar"><span className="hint">${L.welcome}</span><b>${me.name}</b><span className="hint mono" dir="ltr">${me.sid}</span><button className="btn" style=${{marginInlineStart:'auto'}} onClick=${onStuOut}>${L.signOut}</button></div>
     <${Inbox} L=${L} lang=${lang} store=${store} uid=${uid} me=${me} msgs=${msgs} say=${say}/>`:
@@ -797,11 +832,11 @@ function Student({L,lang,store,canWrite,say,tick,me,uid,acct,msgs,onStuIn,onStuO
   </section>`}
 
   ${me&&html`<div id="my-bookings"><${MyBookings} L=${L} lang=${lang} store=${store} me=${me} say=${say}/></div>
-    <details className="panel prof"><summary><h2>${L.profile}</h2></summary><${Profile} L=${L} store=${store} uid=${uid} me=${me} onSess=${onStuIn} say=${say} bare=${true}/></details>`}
+    <details className="panel prof"><summary><h2>${L.profile}</h2></summary><${Profile} L=${L} store=${store} uid=${uid} me=${me} say=${say} bare=${true}/></details>`}
 
   ${needAuth&&html`<${Modal} onClose=${()=>setNeedAuth(null)}>
     <div className="mh" style=${{justifyContent:'flex-end',marginBottom:'-14px'}}><button className="btn ghost" onClick=${()=>setNeedAuth(null)} aria-label=${L.close}>✕</button></div>
-    <${StudentAuth} L=${L} store=${store} uid=${uid} acct=${acct} onIn=${onStuIn} bare=${true}/>
+    <${StudentAuth} L=${L} store=${store} bare=${true} forceChange=${pending}/>
   </${Modal}>`}
   ${form&&me&&html`<${BookForm} L=${L} lang=${lang} store=${store} canWrite=${canWrite} me=${me} uid=${uid} date=${date} slot=${slot} section=${secById(form)} onClose=${()=>setForm(null)} onBooked=${(id,data)=>{setForm(null);setTicket({id,b:data})}} goAccount=${goAccount}/>`}
   ${ticket&&html`<${TicketModal} L=${L} lang=${lang} store=${store} id=${ticket.id} fallback=${ticket.b} say=${say} onClose=${()=>setTicket(null)}/>`}`;
@@ -822,8 +857,8 @@ function BookForm({L,lang,store,canWrite,me,uid,date,slot,section,onClose,onBook
     const data={code:makeCode(date),studentName:me.name,studentId:me.sid,uid,section:section.id,slotId:slot.id,date,status:'booked',createdAt:Date.now()};
     try{
       const r=await store.claim(id,data);
-      if(!r.ok){setBusy(false);if(r.reason==='dup')setDup(true);return setErr(r.reason==='dup'?L.errDup:r.reason==='full'?L.errFull:L.errBusy)}
-      onBooked(id,data);
+      if(!r.ok){setBusy(false);if(r.reason==='dup')setDup(true);return setErr({dup:L.errDup,full:L.errFull,slot_closed:L.errClosed,closed_day:L.errClosedDay}[r.reason]||L.errGeneric)}
+      onBooked(r.id||id,r.row||data);
     }catch(ex){setBusy(false);setErr(ex&&ex.code==='invalid_argument'?L.errPerm:L.errGeneric)}
   }
   return html`<${Modal} onClose=${onClose}><form onSubmit=${submit} style=${{display:'grid',gap:'14px'}}>
@@ -843,47 +878,41 @@ const STU_KEY='crc.stu';
 const genTempPw=()=>{const A='abcdefghjkmnpqrstuvwxyz23456789';const a=new Uint32Array(8);crypto.getRandomValues(a);return Array.from(a,v=>A[v%A.length]).join('')};
 const makeStuSess=(uid,a)=>({uid,sid:a.sid,v:a.hash.slice(0,12),exp:Date.now()+14*86400e3});
 
-function StudentAuth({L,store,uid,acct,onIn,bare}){
-  const [tab,setTab]=useState(acct?'in':'new');
+function StudentAuth({L,store,onIn,bare,forceChange}){
+  const [tab,setTab]=useState('in');
   const [f,setF]=useState({name:'',sid:'',college:'',phone:'',p:'',p2:''});
   const [err,setErr]=useState('');const [busy,setBusy]=useState(false);const [forgot,setForgot]=useState(false);
-  const [change,setChange]=useState(null); // account needing a new password
+  const [changeS,setChange]=useState(false);const change=changeS||forceChange;
   const fails=useRef(0);const until=useRef(0);
   const set=k=>e=>{const v=k==='sid'?e.target.value.replace(/\D/g,''):e.target.value;setF(s=>({...s,[k]:v}))};
   async function signIn(e){
     e.preventDefault();setErr('');
     const wait=Math.ceil((until.current-Date.now())/1000);if(wait>0) return setErr(L.locked.replace('{s}',wait));
     setBusy(true);
-    let ok=false;try{const h=await hashPw(f.p,acct&&acct.salt||'none');ok=!!acct&&acct.sid===f.sid.trim()&&h===acct.hash}catch(x){}
+    const r=await store.studentSignIn(f.sid.trim(),f.p);
     setBusy(false);
-    if(!ok){fails.current++;if(fails.current>=5){until.current=Date.now()+30000;fails.current=0}setF(s=>({...s,p:''}));return setErr(acct&&acct.sid!==f.sid.trim()?L.noAccHere:L.badLogin)}
-    if(acct.mustChange){setChange(acct);setF(s=>({...s,p:'',p2:''}));return}
-    onIn(makeStuSess(uid,acct));
+    if(!r.ok){fails.current++;if(fails.current>=5){until.current=Date.now()+30000;fails.current=0}setF(s=>({...s,p:''}));return setErr(L.badLogin)}
+    if(r.mustChange){setChange(true);setF(s=>({...s,p:'',p2:''}));return}
+    onIn&&onIn();
   }
   async function finishChange(e){
     e.preventDefault();setErr('');
     if(f.p.length<8) return setErr(L.vPw);if(f.p!==f.p2) return setErr(L.vPwMatch);
-    setBusy(true);
-    try{const salt=randSalt();const hash=await hashPw(f.p,salt);const a={...change,salt,hash,mustChange:false};delete a.resetAt;await store.saveAccount(uid,a);onIn(makeStuSess(uid,a))}catch(x){setErr(L.errGeneric)}
-    setBusy(false);
+    setBusy(true);const r=await store.studentSetPassword(f.p);setBusy(false);
+    if(!r.ok) return setErr(L.errGeneric);
+    setChange(false);onIn&&onIn();
   }
   async function register(e){
     e.preventDefault();setErr('');
-    if(acct) return setErr(L.accExists.replace('{sid}',acct.sid));
     const name=f.name.trim().replace(/\s+/g,' '),sid=f.sid.trim();
     if(name.split(' ').length<2||name.length<5) return setErr(L.errName);
     if(!/^\d{4,12}$/.test(sid)) return setErr(L.errId);
     if(f.p.length<8) return setErr(L.vPw);if(f.p!==f.p2) return setErr(L.vPwMatch);
-    if(!uid) return setErr(L.errPerm);
     setBusy(true);
-    try{
-      const ok=await store.claimSid(sid,uid);
-      if(!ok){setBusy(false);return setErr(L.sidTaken)}
-      const salt=randSalt();const hash=await hashPw(f.p,salt);
-      const a={sid,name,college:f.college.trim(),phone:f.phone.trim(),salt,hash,createdAt:Date.now()};
-      await store.saveAccount(uid,a);onIn(makeStuSess(uid,a));
-    }catch(x){setErr(x&&x.code==='invalid_argument'?L.errPerm:L.errGeneric)}
+    const r=await store.studentRegister({sid,name,college:f.college.trim(),phone:f.phone.trim(),password:f.p});
     setBusy(false);
+    if(!r.ok) return setErr(r.reason==='sidTaken'?L.sidTaken:r.reason==='confirm'?L.confirmOff:L.errGeneric);
+    onIn&&onIn();
   }
   const body=change?html`<form onSubmit=${finishChange} style=${{display:'grid',gap:'12px'}}>
       <div><h3 style=${{fontSize:'16px'}}>${L.mustChangeT}</h3><p className="hint" style=${{margin:'4px 0 0'}}>${L.mustChangeH}</p></div>
@@ -1009,15 +1038,16 @@ function Inbox({L,lang,store,uid,me,msgs,say}){
   </details>`;
 }
 
-function Profile({L,store,uid,me,onSess,say,bare}){
+function Profile({L,store,uid,me,say,bare}){
   const [f,setF]=useState({name:me.name||'',college:me.college||'',phone:me.phone||''});
   const [pw,setPw]=useState({c:'',p:'',p2:''});const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
   async function saveP(e){e.preventDefault();setErr('');const name=f.name.trim().replace(/\s+/g,' ');if(name.split(' ').length<2) return setErr(L.errName);
-    setBusy(true);try{await store.saveAccount(uid,{...me,name,college:f.college.trim(),phone:f.phone.trim()});say(L.profileSaved)}catch(x){setErr(L.errGeneric)}setBusy(false)}
+    setBusy(true);try{await store.updateProfile({name,college:f.college.trim(),phone:f.phone.trim()});say(L.profileSaved)}catch(x){setErr(L.errGeneric)}setBusy(false)}
   async function changePw(e){e.preventDefault();setErr('');
-    if(await hashPw(pw.c,me.salt)!==me.hash) return setErr(L.wrongCurrent);
     if(pw.p.length<8) return setErr(L.vPw);if(pw.p!==pw.p2) return setErr(L.vPwMatch);
-    setBusy(true);try{const salt=randSalt();const hash=await hashPw(pw.p,salt);const a={...me,salt,hash};await store.saveAccount(uid,a);onSess(makeStuSess(uid,a));setPw({c:'',p:'',p2:''});say(L.pwChanged)}catch(x){setErr(L.errGeneric)}setBusy(false)}
+    setBusy(true);const r=await store.studentChangePassword(me.sid,pw.c,pw.p);setBusy(false);
+    if(!r.ok) return setErr(r.reason==='wrongCurrent'?L.wrongCurrent:L.errGeneric);
+    setPw({c:'',p:'',p2:''});say(L.pwChanged)}
   return html`<div className=${bare?'sgrid':'panel sgrid'} style=${bare?{marginTop:'14px'}:null}>
     ${!bare&&html`<h2>${L.profile}</h2>`}
     <form onSubmit=${saveP} style=${{display:'grid',gap:'12px'}}>
@@ -1073,7 +1103,7 @@ function StudentAccountsAdmin({L,lang,store,say}){
   const load=async()=>{setErr('');try{setList(await store.listAccounts())}catch(e){setErr(L.errGeneric)}};
   async function issue(a){
     setBusy(a.uid);setErr('');
-    try{const pw=genTempPw();const salt=randSalt();const hash=await hashPw(pw,salt);await store.adminResetPassword(a.uid,salt,hash);setIssued({uid:a.uid,sid:a.sid,name:a.name,pw});await load()}catch(e){setErr(L.errGeneric)}
+    try{const r=await store.adminOp('resetStudentPassword',{id:a.uid});if(!r.ok) throw r;setIssued({uid:a.uid,sid:a.sid,name:a.name,pw:r.password});await load()}catch(e){setErr(L.errGeneric)}
     setBusy('');
   }
   const qq=q.trim().toLowerCase();
@@ -1100,13 +1130,12 @@ const BADGE_CLS={active:'s-ok',expired:'s-mut','checked-in':'s-acc',cancelled:'s
 function TicketModal({L,lang,store,id,fallback,say,onClose}){
   const [b,setB]=useState(fallback||null);const [d,setD]=useState(null);const [ask,setAsk]=useState(false);
   const day=useDay(store,(fallback&&fallback.date)||id.slice(0,10));
-  useEffect(()=>{if(day.ready&&day.b[id]){setB(day.b[id]);setD(day.d[id]||null)}},[day,id]);
+  useEffect(()=>{if(day.ready&&day.b[id]&&!day.b[id]._syn){setB(day.b[id]);setD(day.d[id]||null)}},[day,id]);
   if(!b) return null;
   const badge=ticketBadge(b,d);const sec=secById(b.section);const sl=slotById(b.slotId);
   async function copy(){try{await navigator.clipboard.writeText(b.code);say(L.copied)}catch(e){const r=document.createRange();const el=document.getElementById('tk-code');if(el){r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}}}
   async function savePng(){
     try{
-      const dl=await claude.use('downloads');if(!dl) return;
       await document.fonts.ready;
       const W=900,H=420,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
       g.fillStyle='#ffffff';g.fillRect(0,0,W,H);g.fillStyle='#0F5F4A';g.fillRect(0,0,W,10);
@@ -1121,7 +1150,7 @@ function TicketModal({L,lang,store,id,fallback,say,onClose}){
       g.fillStyle='#111827';for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))g.fillRect(qx+k*cell,qy+r*cell,cell,cell);
       g.strokeStyle='#D6DCE5';g.setLineDash([8,8]);g.lineWidth=2;const lx=rtl?40+cell*n+30:W-40-cell*n-30;g.beginPath();g.moveTo(lx,30);g.lineTo(lx,H-20);g.stroke();
       const blob=await new Promise(r=>c.toBlob(r,'image/png'));
-      await dl.save({filename:b.code+'.png',data:blob});say(L.saved);
+      await saveFile(b.code+'.png',blob);say(L.saved);
     }catch(e){}
   }
   async function doCancel(){try{await store.cancelBooking(id);setB({...b,status:'cancelled'});setAsk(false);say(L.cancelledToast)}catch(e){say(L.errGeneric)}}
@@ -1143,7 +1172,7 @@ function TicketModal({L,lang,store,id,fallback,say,onClose}){
     </article>
     <p className="hint" style=${{margin:0}}>${L.showAtDesk}</p>
     ${ask?html`<div className="err" style=${{display:'grid',gap:'10px'}}><span>${L.cancelAsk}</span><div className="row"><button className="btn bad" onClick=${doCancel}>${L.yesCancel}</button><button className="btn" onClick=${()=>setAsk(false)}>${L.keep}</button></div></div>`:
-    html`<div className="row"><button className="btn" onClick=${copy}>${L.copy}</button>${store.mode==='shared'&&html`<button className="btn" onClick=${savePng}>${L.save}</button>`}${canCancel&&html`<button className="btn bad" style=${{marginInlineStart:'auto'}} onClick=${()=>setAsk(true)}>${L.cancelMine}</button>`}</div>`}
+    html`<div className="row"><button className="btn" onClick=${copy}>${L.copy}</button><button className="btn" onClick=${savePng}>${L.save}</button>${canCancel&&html`<button className="btn bad" style=${{marginInlineStart:'auto'}} onClick=${()=>setAsk(true)}>${L.cancelMine}</button>`}</div>`}
   </${Modal}>`;
 }
 
@@ -1466,18 +1495,14 @@ function AuthBrand({lang,sub}){
 }
 
 /* ---------- Login ---------- */
-function Login({L,staff,onIn}){
+function Login({L,store}){
   const [u,setU]=useState('');const [p,setP]=useState('');const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
   const fails=useRef(0);const until=useRef(0);
   async function submit(e){
     e.preventDefault();setErr('');
     const wait=Math.ceil((until.current-Date.now())/1000);if(wait>0) return setErr(L.locked.replace('{s}',wait));
-    setBusy(true);
-    const acc=staff.find(x=>x.u===u.trim().toLowerCase()&&x.active!==false);
-    let ok=false;try{const h=await hashPw(p,acc?acc.salt:'none');ok=!!acc&&h===acc.hash}catch(x){}
-    setBusy(false);
-    if(!ok){fails.current++;if(fails.current>=5){until.current=Date.now()+30000;fails.current=0}setP('');return setErr(L.badLogin)}
-    onIn({u:acc.u,name:acc.name,v:acc.hash.slice(0,12),exp:Date.now()+12*3600e3});
+    setBusy(true);const r=await store.staffSignIn(u.trim().toLowerCase(),p);setBusy(false);
+    if(!r.ok){fails.current++;if(fails.current>=5){until.current=Date.now()+30000;fails.current=0}setP('');return setErr(L.badLogin)}
   }
   return html`<section className="panel loginBox"><form onSubmit=${submit} style=${{display:'grid',gap:'14px'}}>
     <${AuthBrand} lang=${L.dir==='rtl'?'ar':'en'} sub=${L.loginTitle}/>
@@ -1491,12 +1516,11 @@ function Login({L,staff,onIn}){
 
 /* ---------- Staff accounts (owner) ---------- */
 function StaffAdmin({L,store,staff,say,who}){
-  const [nu,setNu]=useState(()=>({u:'',name:'',p:'',p2:'',role:staff.some(x=>roleOf(x)==='admin')?'staff':'admin'}));
-  const activeAdmins=staff.filter(x=>roleOf(x)==='admin'&&x.active!==false);
-  const isLastAdmin=x=>roleOf(x)==='admin'&&x.active!==false&&activeAdmins.length<=1;
-  const guard=(x,fn)=>{if(isLastAdmin(x)){setErr(L.lastAdmin);return}fn()};const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
+  const [nu,setNu]=useState({u:'',name:'',p:'',p2:'',role:'staff'});
+  const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
   const [pwFor,setPwFor]=useState(null);const [pw,setPw]=useState({p:'',p2:''});const [rmFor,setRmFor]=useState(null);
-  const write=async(users,msg)=>{setBusy(true);setErr('');try{await store.saveStaff(users);say(msg)}catch(x){setErr(L.errGeneric)}setBusy(false)};
+  const errMsg=c=>({last_admin:L.lastAdmin,username_taken:L.vUserDup,bad_username:L.vUser,weak_password:L.vPw,bad_name:L.vDisp}[c]||L.errGeneric);
+  const op=async(action,payload,msg)=>{setBusy(true);setErr('');const r=await store.adminOp(action,payload);setBusy(false);if(!r.ok){setErr(errMsg(r.error));return false}say(msg);return true};
   const checkPw=(a,b)=>a.length<8?L.vPw:a!==b?L.vPwMatch:'';
   async function add(e){
     e.preventDefault();const u=nu.u.trim().toLowerCase();
@@ -1504,32 +1528,26 @@ function StaffAdmin({L,store,staff,say,who}){
     if(staff.some(x=>x.u===u)) return setErr(L.vUserDup);
     if(!nu.name.trim()) return setErr(L.vDisp);
     const v=checkPw(nu.p,nu.p2);if(v) return setErr(v);
-    const salt=randSalt();const hash=await hashPw(nu.p,salt);
-    await write([...staff,{u,name:nu.name.trim(),role:nu.role,salt,hash,active:true,createdAt:Date.now()}],L.staffSaved);
-    setNu({u:'',name:'',p:'',p2:'',role:'staff'});
+    if(await op('createStaff',{username:u,name:nu.name.trim(),password:nu.p,role:nu.role},L.staffSaved)) setNu({u:'',name:'',p:'',p2:'',role:'staff'});
   }
-  async function setPassword(u){
-    const v=checkPw(pw.p,pw.p2);if(v) return setErr(v);
-    const salt=randSalt();const hash=await hashPw(pw.p,salt);
-    await write(staff.map(x=>x.u===u?{...x,salt,hash}:x),L.staffSaved);setPwFor(null);setPw({p:'',p2:''});
-  }
+  async function setPassword(x){const v=checkPw(pw.p,pw.p2);if(v) return setErr(v);if(await op('setStaffPassword',{id:x.id,password:pw.p},L.staffSaved)){setPwFor(null);setPw({p:'',p2:''})}}
   return html`<section className="panel sgrid">
     <div><h2>${L.staff}</h2><p className="hint" style=${{margin:'4px 0 0'}}>${L.staffHint}</p></div>
     ${staff.length===0&&html`<span className="hint">${L.noStaff}</span>`}
-    <div className="zlist">${staff.map(x=>html`<div key=${x.u} className="srow">
-      <div style=${{minWidth:0}}><b>${x.name}</b> <span className="hint mono" dir="ltr">@${x.u}</span>${who&&who.u===x.u&&html` <span className="hint">(${L.you})</span>`}</div>
+    <div className="zlist">${staff.map(x=>html`<div key=${x.id} className="srow">
+      <div style=${{minWidth:0}}><b>${x.name}</b> <span className="hint mono" dir="ltr">@${x.u}</span>${who&&who.id===x.id&&html` <span className="hint">(${L.you})</span>`}</div>
       <span className=${'pill '+(roleOf(x)==='admin'?'s-acc':'s-ok')}>${roleOf(x)==='admin'?L.roleAdmin:L.roleStaff}</span>
       ${x.active===false&&html`<span className="pill s-mut">${L.disabled}</span>`}
       <div className="row" style=${{gap:'6px',marginInlineStart:'auto'}}>
-        <button className="btn" disabled=${busy} onClick=${()=>{setPwFor(pwFor===x.u?null:x.u);setPw({p:'',p2:''});setErr('')}}>${L.resetPw}</button>
-        <button className="btn" disabled=${busy} onClick=${()=>roleOf(x)==='admin'?guard(x,()=>write(staff.map(y=>y.u===x.u?{...y,role:'staff'}:y),L.staffSaved)):write(staff.map(y=>y.u===x.u?{...y,role:'admin'}:y),L.staffSaved)}>${roleOf(x)==='admin'?L.makeStaff:L.makeAdmin}</button>
-        <button className="btn" disabled=${busy} onClick=${()=>x.active!==false?guard(x,()=>write(staff.map(y=>y.u===x.u?{...y,active:false}:y),L.staffSaved)):write(staff.map(y=>y.u===x.u?{...y,active:true}:y),L.staffSaved)}>${x.active!==false?L.disable:L.enable}</button>
-        ${rmFor===x.u?html`<button className="btn bad" disabled=${busy} onClick=${()=>{setRmFor(null);guard(x,()=>write(staff.filter(y=>y.u!==x.u),L.staffRemoved))}}>${L.removeAsk}</button>`:html`<button className="btn bad" onClick=${()=>setRmFor(x.u)}>${L.remove}</button>`}
+        <button className="btn" disabled=${busy} onClick=${()=>{setPwFor(pwFor===x.id?null:x.id);setPw({p:'',p2:''});setErr('')}}>${L.resetPw}</button>
+        <button className="btn" disabled=${busy} onClick=${()=>op('updateStaff',{id:x.id,role:roleOf(x)==='admin'?'staff':'admin'},L.staffSaved)}>${roleOf(x)==='admin'?L.makeStaff:L.makeAdmin}</button>
+        <button className="btn" disabled=${busy} onClick=${()=>op('updateStaff',{id:x.id,active:x.active===false},L.staffSaved)}>${x.active!==false?L.disable:L.enable}</button>
+        ${rmFor===x.id?html`<button className="btn bad" disabled=${busy} onClick=${()=>{setRmFor(null);op('deleteStaff',{id:x.id},L.staffRemoved)}}>${L.removeAsk}</button>`:html`<button className="btn bad" onClick=${()=>setRmFor(x.id)}>${L.remove}</button>`}
       </div>
-      ${pwFor===x.u&&html`<div className="pwrow">
-        <input id=${'pw1-'+x.u} className="search" type="password" dir="ltr" autoComplete="new-password" placeholder=${L.newPw} value=${pw.p} onInput=${e=>{const v=e.target.value;setPw(s=>({...s,p:v}))}}/>
-        <input id=${'pw2-'+x.u} className="search" type="password" dir="ltr" autoComplete="new-password" placeholder=${L.confirmPw} value=${pw.p2} onInput=${e=>{const v=e.target.value;setPw(s=>({...s,p2:v}))}}/>
-        <button className="btn pri" disabled=${busy} onClick=${()=>setPassword(x.u)}>${L.setPw}</button>
+      ${pwFor===x.id&&html`<div className="pwrow">
+        <input id=${'pw1-'+x.id} className="search" type="password" dir="ltr" autoComplete="new-password" placeholder=${L.newPw} value=${pw.p} onInput=${e=>{const v=e.target.value;setPw(s=>({...s,p:v}))}}/>
+        <input id=${'pw2-'+x.id} className="search" type="password" dir="ltr" autoComplete="new-password" placeholder=${L.confirmPw} value=${pw.p2} onInput=${e=>{const v=e.target.value;setPw(s=>({...s,p2:v}))}}/>
+        <button className="btn pri" disabled=${busy} onClick=${()=>setPassword(x)}>${L.setPw}</button>
       </div>`}
     </div>`)}</div>
     <form className="addStaff" onSubmit=${add}>
