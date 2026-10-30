@@ -245,8 +245,8 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js?v=3"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -379,6 +379,8 @@ const T={
   msgTab:'الرسائل',chatTitle:'المراسلة مع الإدارة',chatHint:'اكتب استفسارك وسيرد عليك أحد الموظفين هنا.',chatPh:'اكتب رسالة…',you2:'أنت',staffLbl:'الإدارة',
   convos:'المحادثات',newConvo:'محادثة جديدة',sidPh:'الرقم الجامعي',open2:'فتح',noConvos:'لا توجد محادثات بعد.',pickConvo:'اختر محادثة أو ابدأ واحدة جديدة.',
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
+  netTitle:'لا اتصال',netText:'تعذّر الوصول إلى قاعدة البيانات. تُعاد المحاولة تلقائياً؛ تحقق من اتصالك بالإنترنت.',
+  libFail:'تعذّر تحميل مكتبة الاتصال بقاعدة البيانات. تحقق من الاتصال بالإنترنت ثم أعد تحميل الصفحة.',
   setupTitle:'الإعداد مطلوب',setupText:'لم يُربط التطبيق بقاعدة البيانات بعد. افتح الملف config.js وضع فيه رابط مشروع Supabase والمفتاح العام، كما هو موضح في ملف README.',bootTitle:'إنشاء أول مدير نظام',bootHint:'لا يوجد مدير نظام بعد. أنشئ حسابك الآن؛ بعد ذلك لن تظهر هذه الشاشة.',createAdmin:'إنشاء الحساب والدخول',bootDone:'تم إنشاء مدير النظام بالفعل. سجّل الدخول.',confirmOff:'تأكيد البريد مفعّل في Supabase. يجب إيقاف خيار Confirm email (راجع README).',
   manage:'الإدارة',sysAdmin:'مدير النظام',rights:'جميع الحقوق محفوظة لدى Services Squire LLC.',deskTab:'الاستقبال',settingsTab:'الإعدادات',
   role:'الصلاحية',roleStaff:'موظف استقبال',roleAdmin:'مدير النظام',roleStaffD:'الاستقبال فقط: الحضور والرسائل والتقارير',roleAdminD:'كل شيء: الاستقبال والإعدادات والحسابات',
@@ -447,6 +449,8 @@ const T={
   msgTab:'Messages',chatTitle:'Messages with the center',chatHint:'Write your question and a staff member will reply here.',chatPh:'Write a message…',you2:'You',staffLbl:'Center staff',
   convos:'Conversations',newConvo:'New conversation',sidPh:'Student ID',open2:'Open',noConvos:'No conversations yet.',pickConvo:'Pick a conversation or start a new one.',
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
+  netTitle:'Offline',netText:'Can\u2019t reach the database. Retrying automatically; check your internet connection.',
+  libFail:'The database library couldn\u2019t load. Check your internet connection and reload the page.',
   setupTitle:'Setup needed',setupText:'The app isn\u2019t connected to a database yet. Open config.js and add your Supabase project URL and public key, as described in the README.',bootTitle:'Create the first system admin',bootHint:'No system admin exists yet. Create your account now; this screen won\u2019t appear again.',createAdmin:'Create account and sign in',bootDone:'A system admin already exists. Please sign in.',confirmOff:'Email confirmation is on in Supabase. Turn off "Confirm email" (see the README).',
   manage:'Management',sysAdmin:'System admin',rights:'All rights reserved by Services Squire LLC.',deskTab:'Reception',settingsTab:'Settings',
   role:'Role',roleStaff:'Reception staff',roleAdmin:'System admin',roleStaffD:'Reception only: check-ins, messages and reports',roleAdminD:'Everything: reception, settings and accounts',
@@ -497,9 +501,10 @@ function makeSupabaseStore(C){
   const msgRow=r=>({id:r.id,text:r.text,at:ms(r.at),from:r.from_role,byName:r.by_name,byU:r.by_user,read:r.read,code:r.code});
   let chn=0;
   // fetch now, refetch on any change to the table (and on a timer as a safety net)
-  function live(client,{table,filter,fetch,cb,poll=20000}){
+  let netCb=()=>{};
+  function live(client,{table,filter,fetch,cb,poll=20000,onErr}){
     let alive=true;
-    const run=async()=>{try{const v=await fetch();if(alive)cb(v)}catch(e){console.warn(e)}};
+    const run=async()=>{try{const v=await fetch();if(alive){cb(v);netCb(false)}}catch(e){console.warn(e);if(alive){netCb(true);onErr&&onErr(e)}}};
     run();
     const ch=client.channel('crc'+(++chn)+Math.random().toString(36).slice(2,7))
       .on('postgres_changes',{event:'*',schema:'public',table,...(filter?{filter}:{})},()=>run()).subscribe();
@@ -509,10 +514,11 @@ function makeSupabaseStore(C){
   const must=({data,error})=>{if(error) throw error;return data};
   return{
     mode:'shared',
+    onNetwork(f){netCb=f},
     setStaffMode(on){staffOn=on},
 
     /* settings */
-    subscribeConfig(cb){return live(stu,{table:'config',poll:60000,fetch:async()=>{const r=must(await stu.from('config').select('data').eq('id',1).maybeSingle());return r?r.data:null},cb})},
+    subscribeConfig(cb){return live(stu,{table:'config',poll:60000,fetch:async()=>{const r=must(await stu.from('config').select('data').eq('id',1).maybeSingle());return r?r.data:null},cb,onErr:()=>cb(undefined)})},
     async saveConfig(c){const r=must(await stf.from('config').update({data:c,updated_at:new Date().toISOString()}).eq('id',1).select('id'));if(!r||!r.length) throw {code:'invalid_argument'}},
 
     /* bookings */
@@ -669,7 +675,7 @@ function App(){
   const L=T[lang];
   useEffect(()=>{document.documentElement.lang=lang;document.documentElement.dir=L.dir;ls.set('crc.lang',lang)},[lang]);
   const C=window.CRC_CONFIG||{};
-  const configured=!!(C.supabaseUrl&&C.supabaseAnonKey&&!/YOUR-/.test(C.supabaseUrl+C.supabaseAnonKey)&&window.supabase);
+  const hasCfg=!!(C.supabaseUrl&&C.supabaseAnonKey&&!/YOUR-/.test(C.supabaseUrl+C.supabaseAnonKey));const configured=hasCfg&&!!window.supabase;
   const [store]=useState(()=>configured?makeSupabaseStore(C):null);
   const [view,setView]=useState(()=>location.hash==='#manage'?'manage':'student');
   const [toast,setToast]=useState('');
@@ -681,7 +687,10 @@ function App(){
   // shared settings
   const [cfg,setCfg]=useState(()=>CFG);
   const [cfgReady,setCfgReady]=useState(false);
-  useEffect(()=>{if(!store) return;return store.subscribeConfig(c=>{setCfg(applyCfg(c));setCfgReady(true)})},[store]);
+  const [netErr,setNetErr]=useState(false);
+  useEffect(()=>{if(store) store.onNetwork(setNetErr)},[store]);
+  useEffect(()=>{if(!store) return;return store.subscribeConfig(c=>{if(c!==undefined||!cfgOnce.current){setCfg(applyCfg(c===undefined?null:c));cfgOnce.current=true}setCfgReady(true)})},[store]);
+  const cfgOnce=useRef(false);
   useEffect(()=>{document.title=cfg.name[lang]||cfg.name.en},[cfg,lang]);
 
   // management session
@@ -689,7 +698,7 @@ function App(){
   useEffect(()=>{if(!store) return;return store.onStaff(setStaffMe)},[store]);
   useEffect(()=>{if(store) store.setStaffMode(!!staffMe)},[store,staffMe]);
   const [boot,setBoot]=useState(null);
-  useEffect(()=>{if(store&&view==='manage'&&staffMe===null) store.needsBootstrap().then(setBoot).catch(()=>setBoot(false))},[store,view,staffMe]);
+  useEffect(()=>{if(store&&view==='manage'&&staffMe===null) store.needsBootstrap().then(v=>setBoot(!!v)).catch(()=>{setBoot(false);setNetErr(true)})},[store,view,staffMe]);
   const [staff,setStaff]=useState([]);
   useEffect(()=>{if(!store||!staffMe) return;return store.watchStaffList(setStaff)},[store,staffMe&&staffMe.id]);
 
@@ -710,12 +719,12 @@ function App(){
   const footer=html`<footer className="foot"><div className="wrap"><span>© ${new Date().getFullYear()} Services Squire LLC</span><span>${L.rights}</span></div></footer>`;
 
   if(!store) return html`<header className="top"><div className="wrap topin">${brand}${langBtn}</div></header>
-    <main className="wrap"><section className="panel loginBox" style=${{maxWidth:'560px',display:'grid',gap:'10px'}}><h2 style=${{margin:0}}>${L.setupTitle}</h2><p style=${{margin:0}}>${L.setupText}</p></section></main>${footer}`;
+    <main className="wrap"><section className="panel loginBox" style=${{maxWidth:'560px',display:'grid',gap:'10px'}}><h2 style=${{margin:0}}>${L.setupTitle}</h2><p style=${{margin:0}}>${hasCfg?L.libFail:L.setupText}</p></section></main>${footer}`;
 
   let body;
   if(!cfgReady) body=html`<div className="empty">…</div>`;
   else if(view==='manage'){
-    if(staffMe===undefined) body=html`<div className="empty">…</div>`;
+    if(staffMe===undefined||(staffMe===null&&boot===null)) body=html`<div className="empty">…</div>`;
     else if(staffMe) body=html`<${Manage} L=${L} lang=${lang} store=${store} say=${say} tick=${tick} cfg=${cfg} staff=${staff} who=${staffMe} onSignOut=${()=>store.staffSignOut()}/>`;
     else if(boot) body=html`<${Bootstrap} L=${L} lang=${lang} store=${store} onDone=${()=>setBoot(false)}/>`;
     else body=html`<${Login} L=${L} store=${store}/>`;
@@ -731,7 +740,7 @@ function App(){
     </div>
     ${langBtn}
   </div></header>
-  <main className="wrap">${body}</main>
+  <main className="wrap">${netErr&&html`<div className="banner"><b>${L.netTitle}</b><span>${L.netText}</span></div>`}${body}</main>
   ${footer}
   ${toast&&html`<div className="toast" role="status"><div>${toast}</div></div>`}`;
 }
