@@ -250,6 +250,7 @@ details summary{list-style-position:inside}
 .mgSec h3{font-size:15px;display:flex;align-items:center;gap:8px}
 .dangerSec h3{color:var(--bad)}
 .warnBox{border-color:var(--warn)}
+.pendingV{background:var(--accent-soft)}.pendingV b{color:var(--accent)}
 .savebar{position:sticky;bottom:0;z-index:4;background:var(--surface);border-top:1px solid var(--line);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-block:12px calc(12px + env(safe-area-inset-bottom,0px))}
 @media (max-width:860px){.zrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.zrow .iconPick{grid-column:1/-1}.zrow .rm{justify-self:start}}
 @media (max-width:520px){.zrow{grid-template-columns:1fr}.crow{grid-template-columns:1fr}.crow .rm{justify-self:start}}
@@ -265,7 +266,7 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=7"></script>
+<script src="config.js?v=9"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -398,6 +399,8 @@ const T={
   msgTab:'الرسائل',chatTitle:'المراسلة مع الإدارة',chatHint:'اكتب استفسارك وسيرد عليك أحد الموظفين هنا.',chatPh:'اكتب رسالة…',you2:'أنت',staffLbl:'الإدارة',
   convos:'المحادثات',newConvo:'محادثة جديدة',sidPh:'الرقم الجامعي',open2:'فتح',noConvos:'لا توجد محادثات بعد.',pickConvo:'اختر محادثة أو ابدأ واحدة جديدة.',
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
+  pendingT:'حسابك بانتظار التحقق',pendingText:'حجوزاتك مؤكدة. أحضر بطاقتك الجامعية إلى مكتب الاستقبال ليتحقق المشرف من بياناتك.',bookedOk:'تم الحجز',bookedOkPending:'تم الحجز — حسابك بانتظار التحقق',bookedConfirmed:'الحجز مؤكد',ticketPending:'حسابك بانتظار التحقق من المشرف؛ أحضر بطاقتك الجامعية.',
+  unverified:'غير متحقق',verifiedB:'متحقق',verifyBtn:'تحقق',verifyBtnLong:'تأكيد التحقق من البيانات',unverifyBtn:'إلغاء التحقق',verifiedToast:'تم التحقق من الحساب',verification:'التحقق من الحساب',verifyHint:'طابق الاسم والرقم الجامعي مع البطاقة الجامعية، ثم أكّد التحقق.',verifiedBy:'تحقق منه {n} في {d}',pendingF:'بانتظار التحقق',
   installApp:'تثبيت التطبيق',thisHour:'هذه الساعة',msgAllDay:'رسالة لكل طلاب هذا اليوم',
   errRestricted:'حسابك مقيّد حالياً من الحجز. راجع إدارة المركز.',restrictedT:'حسابك مقيّد من الحجز',restrictedUntil:'لا يمكنك الحجز حتى {d}.',restrictedOpen:'لا يمكنك الحجز حتى ترفع الإدارة التقييد.',restrictedHint:'للاستفسار راسل الإدارة من لوحة المراسلة أدناه.',myWarnings:'الإنذارات',warningN:'إنذار رقم {n}',
   stuAccHint2:'إدارة حسابات الطلاب متاحة لمدير النظام فقط: تعديل البيانات، التقييد من الحجز، الإنذارات، الحذف، وإصدار كلمة مرور مؤقتة عند النسيان.',allStudents:'الكل',restrictedF:'مقيّد',warnedF:'لديه إنذارات',refresh:'تحديث',warnsN:'{n} إنذار',manageStu:'إدارة',manageStuLong:'إدارة الطالب',
@@ -474,6 +477,8 @@ const T={
   msgTab:'Messages',chatTitle:'Messages with the center',chatHint:'Write your question and a staff member will reply here.',chatPh:'Write a message…',you2:'You',staffLbl:'Center staff',
   convos:'Conversations',newConvo:'New conversation',sidPh:'Student ID',open2:'Open',noConvos:'No conversations yet.',pickConvo:'Pick a conversation or start a new one.',
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
+  pendingT:'Your account is awaiting verification',pendingText:'Your bookings are confirmed. Bring your university ID card to the desk so a supervisor can verify your details.',bookedOk:'Booked',bookedOkPending:'Booked — account awaiting verification',bookedConfirmed:'Booking confirmed',ticketPending:'Your account is awaiting verification by a supervisor; bring your university ID card.',
+  unverified:'Unverified',verifiedB:'Verified',verifyBtn:'Verify',verifyBtnLong:'Confirm details verified',unverifyBtn:'Undo verification',verifiedToast:'Account verified',verification:'Account verification',verifyHint:'Match the name and student ID against the university ID card, then confirm.',verifiedBy:'Verified by {n} on {d}',pendingF:'Awaiting verification',
   installApp:'Install app',thisHour:'This hour',msgAllDay:'Message everyone today',
   errRestricted:'Your account is currently restricted from booking. Contact the center management.',restrictedT:'Your account is restricted from booking',restrictedUntil:'You can\u2019t book until {d}.',restrictedOpen:'You can\u2019t book until the management lifts the restriction.',restrictedHint:'For questions, message the management below.',myWarnings:'Warnings',warningN:'Warning #{n}',
   stuAccHint2:'Student accounts are managed by system admins only: edit details, restrict booking, warnings, delete, and temporary passwords.',allStudents:'All',restrictedF:'Restricted',warnedF:'Has warnings',refresh:'Refresh',warnsN:'{n} warnings',manageStu:'Manage',manageStuLong:'Manage student',
@@ -528,7 +533,7 @@ function makeSupabaseStore(C){
   const bk=r=>({code:r.code,studentName:r.student_name,studentId:r.student_id,uid:r.uid,section:r.section,slotId:r.slot_id,date:r.date,status:r.status,createdAt:ms(r.created_at)});
   const dk=r=>r.desk_status?{status:r.desk_status,code:r.code,date:r.date,sid:r.student_id,by:r.desk_by,byName:r.desk_by_name,at:ms(r.desk_at)}:null;
   const split=rows=>{const b={},d={};(rows||[]).forEach(r=>{b[r.id]=bk(r);const x=dk(r);if(x)d[r.id]=x});return{b,d}};
-  const stuRow=r=>({id:r.id,sid:r.sid,name:r.name,college:r.college||'',phone:r.phone||'',mustChange:!!r.must_change,createdAt:ms(r.created_at),restricted:!!r.restricted,restrictedUntil:r.restricted_until||'',restrictReason:r.restrict_reason||''});
+  const stuRow=r=>({id:r.id,sid:r.sid,name:r.name,college:r.college||'',phone:r.phone||'',mustChange:!!r.must_change,createdAt:ms(r.created_at),restricted:!!r.restricted,restrictedUntil:r.restricted_until||'',restrictReason:r.restrict_reason||'',verified:!!r.verified,verifiedBy:r.verified_by||'',verifiedAt:ms(r.verified_at)});
   const msgRow=r=>({id:r.id,text:r.text,at:ms(r.at),from:r.from_role,byName:r.by_name,byU:r.by_user,read:r.read,code:r.code});
   let chn=0;
   // fetch now, refetch on any change to the table (and on a timer as a safety net)
@@ -579,17 +584,21 @@ function makeSupabaseStore(C){
     /* students: sign-up, sign-in, profile */
     onStudent(cb){
       let alive=true;
+      let watch=null;
+      const stopWatch=()=>{if(watch){watch();watch=null}};
       const load=async session=>{
-        if(!session){stuUid=null;if(alive)cb(null);return}
+        if(!session){stuUid=null;stopWatch();if(alive)cb(null);return}
         const {data}=await stu.from('students').select('*').eq('id',session.user.id).maybeSingle();
         if(!alive) return;
-        if(!data){stuUid=null;cb(null);return}
+        if(!data){stuUid=null;stopWatch();cb(null);return}
         stuUid=data.id;cb(stuRow(data));
+        // keep verification / restriction status live while signed in
+        if(!watch) watch=live(stu,{table:'students',filter:`id=eq.${data.id}`,poll:60000,fetch:async()=>must(await stu.from('students').select('*').eq('id',data.id).maybeSingle()),cb:r=>{if(alive&&r)cb(stuRow(r))}});
       };
       reloadStudent=async()=>{const {data}=await stu.auth.getSession();await load(data.session)};
       stu.auth.getSession().then(({data})=>load(data.session));
       const {data:{subscription}}=stu.auth.onAuthStateChange((ev,session)=>{if(ev==='TOKEN_REFRESHED'||ev==='INITIAL_SESSION') return;setTimeout(()=>load(session),0)});
-      return()=>{alive=false;subscription.unsubscribe()};
+      return()=>{alive=false;stopWatch();subscription.unsubscribe()};
     },
     async studentRegister({sid,name,college,phone,password}){
       const {data,error}=await stu.auth.signUp({email:sEmail(sid),password});
@@ -659,6 +668,8 @@ function makeSupabaseStore(C){
     async adminWarn(uid,reason){return must(await stf.rpc('admin_warn',{p_student:uid,p_reason:reason}))},
     async adminDeleteWarning(id){must(await stf.rpc('admin_delete_warning',{p_id:id}))},
     reloadStudent(){return reloadStudent()},
+    async verifiedMap(uids){if(!uids.length) return{};const r=must(await stf.from('students').select('id,verified').in('id',uids));const m={};r.forEach(x=>m[x.id]=!!x.verified);return m},
+    async verifyStudent(uid,on){must(await stf.rpc('verify_student',{p_student:uid,p_on:on}))},
     async getStudent(uid){const r=must(await stf.from('students').select('*').eq('id',uid).maybeSingle());if(!r) return null;const w=must(await stf.from('warnings').select('id').eq('student',uid));return{uid:r.id,...stuRow(r),warnings:w.length}},
 
     /* messages */
@@ -854,9 +865,10 @@ function Student({L,lang,store,canWrite,say,tick,me,uid,msgs,pending,onStuOut}){
   const pickZone=id=>{if(me) setForm(id);else setNeedAuth(id)};
   useEffect(()=>{if(me&&needAuth){if(needAuth!=='__')setForm(needAuth);setNeedAuth(null)}},[me,needAuth]);
 
-  if(pending&&!needAuth) return html`<${StudentAuth} L=${L} store=${store} forceChange=${true}/>`;
+  if(pending&&!needAuth) return html`<${StudentAuth} L=${L} store=${store} forceChange=${true}/><div style=${{textAlign:'center'}}><button className="btn ghost" onClick=${onStuOut}>${L.signOut}</button></div>`;
   return html`
   ${me?html`<div className="row signbar"><span className="hint">${L.welcome}</span><b>${me.name}</b><span className="hint mono" dir="ltr">${me.sid}</span><button className="btn" style=${{marginInlineStart:'auto'}} onClick=${onStuOut}>${L.signOut}</button></div>
+    ${!me.verified&&!blocked&&html`<div className="banner pendingV"><b>${L.pendingT}</b><span>${L.pendingText}</span></div>`}
     ${blocked&&html`<section className="panel closedBox"><h2>${L.restrictedT}</h2><p style=${{margin:0}}>${me.restrictedUntil?L.restrictedUntil.replace('{d}',longDate(me.restrictedUntil,lang)):L.restrictedOpen}${me.restrictReason?html`<br/><b>${L.reason}:</b> ${me.restrictReason}`:''}</p><p className="hint" style=${{margin:0}}>${L.restrictedHint}</p></section>`}
     ${warns.length>0&&html`<details className="panel prof warnBox"><summary><h2>${L.myWarnings} <span className="pill s-warn num">${warns.length}</span></h2></summary><div className="mine" style=${{marginTop:'12px'}}>${warns.map((w,i)=>html`<div key=${w.id} className="mineRow"><div style=${{minWidth:0}}><b>${L.warningN.replace('{n}',warns.length-i)}</b> · <span className="hint num">${fmtStamp(w.at,lang)}</span><div style=${{overflowWrap:'anywhere'}}>${w.reason}</div></div></div>`)}</div></details>`}
     <${Inbox} L=${L} lang=${lang} store=${store} uid=${uid} me=${me} msgs=${msgs} say=${say}/>`:
@@ -896,8 +908,8 @@ function Student({L,lang,store,canWrite,say,tick,me,uid,msgs,pending,onStuOut}){
     <div className="mh" style=${{justifyContent:'flex-end',marginBottom:'-14px'}}><button className="btn ghost" onClick=${()=>setNeedAuth(null)} aria-label=${L.close}>✕</button></div>
     <${StudentAuth} L=${L} store=${store} bare=${true} forceChange=${pending}/>
   </${Modal}>`}
-  ${form&&me&&html`<${BookForm} L=${L} lang=${lang} store=${store} canWrite=${canWrite} me=${me} uid=${uid} date=${date} slot=${slot} section=${secById(form)} onClose=${()=>setForm(null)} onBooked=${(id,data)=>{setForm(null);setTicket({id,b:data})}} goAccount=${goAccount}/>`}
-  ${ticket&&html`<${TicketModal} L=${L} lang=${lang} store=${store} id=${ticket.id} fallback=${ticket.b} say=${say} onClose=${()=>setTicket(null)}/>`}`;
+  ${form&&me&&html`<${BookForm} L=${L} lang=${lang} store=${store} canWrite=${canWrite} me=${me} uid=${uid} date=${date} slot=${slot} section=${secById(form)} onClose=${()=>setForm(null)} onBooked=${(id,data)=>{setForm(null);setTicket({id,b:data});say(me.verified?L.bookedOk:L.bookedOkPending)}} goAccount=${goAccount}/>`}
+  ${ticket&&html`<${TicketModal} L=${L} lang=${lang} store=${store} id=${ticket.id} fallback=${ticket.b} say=${say} unverified=${!!me&&!me.verified} onClose=${()=>setTicket(null)}/>`}`;
 }
 
 function Modal({children,onClose,wide}){
@@ -1031,7 +1043,7 @@ function MyBookings({L,lang,store,me,say,compact,onMore}){
     <div className="row" style=${{justifyContent:'space-between'}}><h2 style=${{margin:0}}>${L.myBookings}</h2>${compact&&html`<button className="btn" onClick=${onMore}>${L.myAccount}</button>`}</div>
     ${!ready?html`<p className="hint">…</p>`:up.length?html`<div className="mine">${up.map(row)}</div>`:html`<p className="hint" style=${{margin:0}}>${L.noBookings}</p>`}
     ${!compact&&past.length>0&&html`<details><summary className="hint" style=${{cursor:'pointer'}}>${L.past} (${past.length})</summary><div className="mine" style=${{marginTop:'10px'}}>${past.map(row)}</div></details>`}
-    ${ticket&&html`<${TicketModal} L=${L} lang=${lang} store=${store} id=${ticket.id} fallback=${ticket} say=${say} onClose=${()=>setTicket(null)}/>`}
+    ${ticket&&html`<${TicketModal} L=${L} lang=${lang} store=${store} id=${ticket.id} fallback=${ticket} say=${say} unverified=${!me.verified} onClose=${()=>setTicket(null)}/>`}
     ${edit&&html`<${EditBooking} L=${L} lang=${lang} store=${store} bk=${edit} say=${say} onClose=${()=>setEdit(null)}/>`}
   </section>`;
 }
@@ -1169,14 +1181,14 @@ function StudentAccountsAdmin({L,lang,store,say}){
   const active=a=>a.restricted&&(!a.restrictedUntil||a.restrictedUntil>=todayISO());
   const qq=q.trim().toLowerCase();
   const rows=(list||[]).filter(a=>a.sid&&(!qq||a.sid.includes(qq)||(a.name||'').toLowerCase().includes(qq)))
-    .filter(a=>filter==='all'||(filter==='restricted'&&active(a))||(filter==='warned'&&a.warnings>0));
+    .filter(a=>filter==='all'||(filter==='pending'&&!a.verified)||(filter==='restricted'&&active(a))||(filter==='warned'&&a.warnings>0));
   const fmt=t=>t?new Date(t).toLocaleDateString(lang==='ar'?'ar-OM-u-nu-latn':'en-GB'):'';
   return html`<section className="panel sgrid">
     <div><h2>${L.stuAccounts}</h2><p className="hint" style=${{margin:'4px 0 0'}}>${L.stuAccHint2}</p></div>
     ${list===null?html`<div><button className="btn" onClick=${load}>${L.loadAcc}</button></div>`:html`
       <div className="row">
         <input id="sa-search" className="search" style=${{flex:'1 1 220px'}} placeholder=${L.findSid} value=${q} onInput=${e=>setQ(e.target.value)}/>
-        <div className="seg">${[['all',L.allStudents],['restricted',L.restrictedF],['warned',L.warnedF]].map(([k,t])=>html`<button key=${k} aria-pressed=${filter===k} onClick=${()=>setFilter(k)}>${t}</button>`)}</div>
+        <div className="seg">${[['all',L.allStudents],['pending',L.pendingF],['restricted',L.restrictedF],['warned',L.warnedF]].map(([k,t])=>html`<button key=${k} aria-pressed=${filter===k} onClick=${()=>setFilter(k)}>${t}</button>`)}</div>
         <button className="btn ghost" onClick=${load}>${L.refresh}</button>
       </div>
       ${issued&&html`<div className="banner ok" style=${{display:'grid',gap:'6px'}}><span>${issued.name} · <span className="mono" dir="ltr">${issued.sid}</span></span>
@@ -1187,6 +1199,7 @@ function StudentAccountsAdmin({L,lang,store,say}){
         <div style=${{minWidth:0}}><b>${a.name}</b> <span className="hint mono" dir="ltr">${a.sid}</span><div className="hint">${[a.college,a.phone,L.registered+' '+fmt(a.createdAt)].filter(Boolean).join(' · ')}</div></div>
         ${active(a)&&html`<span className="pill s-bad">${L.restrictedF}</span>`}
         ${a.warnings>0&&html`<span className="pill s-warn num">${L.warnsN.replace('{n}',a.warnings)}</span>`}
+        ${a.verified?html`<span className="pill s-ok">${L.verifiedB}</span>`:html`<span className="pill s-warn">${L.unverified}</span>`}
         ${a.mustChange&&html`<span className="pill s-mut">${L.tempPw}</span>`}
         <div className="row" style=${{gap:'6px',marginInlineStart:'auto'}}>
           <button className="btn pri" onClick=${()=>setManage(a)}>${L.manageStu}</button>
@@ -1231,6 +1244,14 @@ function StudentManage({L,lang,store,say,st,onClose,onChanged}){
     <div className="mh"><div><h2>${cur.name}</h2><span className="hint mono" dir="ltr">${cur.sid}</span></div><button className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
     ${err&&html`<div className="err" role="alert">${err}</div>`}
     ${info&&html`<div className="banner ok">${info}</div>`}
+
+    <section className="mgSec">
+      <h3>${L.verification} ${cur.verified?html`<span className="pill s-ok">${L.verifiedB}</span>`:html`<span className="pill s-warn">${L.unverified}</span>`}</h3>
+      <p className="hint" style=${{margin:0}}>${cur.verified?L.verifiedBy.replace('{n}',cur.verifiedBy||'').replace('{d}',cur.verifiedAt?fmtStamp(cur.verifiedAt,lang):''):L.verifyHint}</p>
+      <div>${cur.verified
+        ?html`<button className="btn" disabled=${!!busy} onClick=${()=>run('unv',async()=>{await store.verifyStudent(st.uid,false);setCur(c=>({...c,verified:false}));onChanged()})}>${busy==='unv'?'…':L.unverifyBtn}</button>`
+        :html`<button className="btn pri" disabled=${!!busy} onClick=${()=>run('ver',async()=>{await store.verifyStudent(st.uid,true);setCur(c=>({...c,verified:true,verifiedAt:Date.now()}));say(L.verifiedToast);onChanged()})}>${busy==='ver'?'…':L.verifyBtnLong}</button>`}</div>
+    </section>
 
     <section className="mgSec">
       <h3>${L.editDetails}</h3>
@@ -1279,7 +1300,7 @@ function StudentManage({L,lang,store,say,st,onClose,onChanged}){
 
 const BADGE_CLS={active:'s-ok',expired:'s-mut','checked-in':'s-acc',cancelled:'s-bad','no-show':'s-bad',booked:'s-warn'};
 
-function TicketModal({L,lang,store,id,fallback,say,onClose}){
+function TicketModal({L,lang,store,id,fallback,say,onClose,unverified}){
   const [b,setB]=useState(fallback||null);const [d,setD]=useState(null);const [ask,setAsk]=useState(false);
   const day=useDay(store,(fallback&&fallback.date)||id.slice(0,10));
   useEffect(()=>{if(day.ready&&day.b[id]&&!day.b[id]._syn){setB(day.b[id]);setD(day.d[id]||null)}},[day,id]);
@@ -1322,6 +1343,7 @@ function TicketModal({L,lang,store,id,fallback,say,onClose}){
       </div>
       <div className="stub"><${QR} text=${b.code}/><span className="hint">${L.hour} ${sl.id}</span></div>
     </article>
+    ${unverified&&html`<div className="banner pendingV"><b>${L.bookedConfirmed}</b><span>${L.ticketPending}</span></div>`}
     <p className="hint" style=${{margin:0}}>${L.showAtDesk}</p>
     ${ask?html`<div className="err" style=${{display:'grid',gap:'10px'}}><span>${L.cancelAsk}</span><div className="row"><button className="btn bad" onClick=${doCancel}>${L.yesCancel}</button><button className="btn" onClick=${()=>setAsk(false)}>${L.keep}</button></div></div>`:
     html`<div className="row"><button className="btn" onClick=${copy}>${L.copy}</button><button className="btn" onClick=${savePng}>${L.save}</button>${canCancel&&html`<button className="btn bad" style=${{marginInlineStart:'auto'}} onClick=${()=>setAsk(true)}>${L.cancelMine}</button>`}</div>`}
@@ -1364,6 +1386,10 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
   const slotId=SLOTS.some(s=>s.id===slotIdRaw)?slotIdRaw:(SLOTS[0]||{}).id;
   const [sec,setSec]=useState('all');const [q,setQ]=useState('');const [exp,setExp]=useState(false);const [msgTo,setMsgTo]=useState(null);
   const {b,d,ready}=useDay(store,date,true);
+  const [vmap,setVmap]=useState({});
+  const uidKey=[...new Set(Object.values(b).filter(x=>x.uid).map(x=>x.uid))].sort().join(',');
+  useEffect(()=>{if(!uidKey){setVmap({});return}let ok=true;store.verifiedMap(uidKey.split(',')).then(m=>{if(ok)setVmap(m)}).catch(()=>{});return()=>{ok=false}},[store,uidKey]);
+  async function verify(r){try{await store.verifyStudent(r.uid,true);setVmap(m=>({...m,[r.uid]:true}));say(L.verifiedToast)}catch(e){say(L.errGeneric)}}
   const [allDay,setAllDay]=useState(false);
   const closed=closedInfo(date);
   const per=counts(b,d,date,slotId);
@@ -1428,7 +1454,7 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
         const badge=r.st==='booked'&&slotPhase(r.date,rsl)==='ended'?'expired':r.st==='booked'?'booked':r.st;
         return html`<tr key=${r.id} className=${late?'late':''}>
           <td><span className="code" dir="ltr" style=${{fontSize:'13px'}}>${r.code}</span></td>
-          <td><div style=${{fontWeight:600}}>${r.studentName}</div><div className="hint mono num" dir="ltr" style=${{textAlign:'start'}}>${r.studentId}</div></td>
+          <td><div style=${{fontWeight:600}}>${r.studentName}</div><div className="hint mono num" dir="ltr" style=${{textAlign:'start'}}>${r.studentId}</div>${r.uid&&vmap[r.uid]===false&&html`<div className="row" style=${{gap:'6px',marginTop:'4px'}}><span className="pill s-warn">${L.unverified}</span><button className="btn" style=${{padding:'3px 10px',fontSize:'12.5px'}} onClick=${()=>verify(r)}>${L.verifyBtn}</button></div>`}</td>
           <td>${secById(r.section)[lang]}</td>
           ${(qq||allDay)&&html`<td className="num">${slotLabel(rsl,L)}</td>`}
           <td><span className=${'pill '+BADGE_CLS[badge]}>${L['st_'+badge]}</span>${late&&html` <span className="pill s-warn">${L.late}</span>`}${d[r.id]&&d[r.id].code===r.code&&d[r.id].by&&html`<div className="hint" style=${{fontSize:'11.5px',marginTop:'3px'}}>${L.by} ${d[r.id].byName||d[r.id].by}</div>`}</td>
