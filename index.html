@@ -265,7 +265,7 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=6"></script>
+<script src="config.js?v=7"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -400,7 +400,7 @@ const T={
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
   installApp:'تثبيت التطبيق',thisHour:'هذه الساعة',msgAllDay:'رسالة لكل طلاب هذا اليوم',
   errRestricted:'حسابك مقيّد حالياً من الحجز. راجع إدارة المركز.',restrictedT:'حسابك مقيّد من الحجز',restrictedUntil:'لا يمكنك الحجز حتى {d}.',restrictedOpen:'لا يمكنك الحجز حتى ترفع الإدارة التقييد.',restrictedHint:'للاستفسار راسل الإدارة من لوحة المراسلة أدناه.',myWarnings:'الإنذارات',warningN:'إنذار رقم {n}',
-  stuAccHint2:'إدارة حسابات الطلاب متاحة لمدير النظام فقط: تعديل البيانات، التقييد من الحجز، الإنذارات، الحذف، وإصدار كلمة مرور مؤقتة عند النسيان.',allStudents:'الكل',restrictedF:'مقيّد',warnedF:'لديه إنذارات',refresh:'تحديث',warnsN:'{n} إنذار',manageStu:'إدارة',
+  stuAccHint2:'إدارة حسابات الطلاب متاحة لمدير النظام فقط: تعديل البيانات، التقييد من الحجز، الإنذارات، الحذف، وإصدار كلمة مرور مؤقتة عند النسيان.',allStudents:'الكل',restrictedF:'مقيّد',warnedF:'لديه إنذارات',refresh:'تحديث',warnsN:'{n} إنذار',manageStu:'إدارة',manageStuLong:'إدارة الطالب',
   editDetails:'تعديل البيانات',sidChangeNote:'تغيير الرقم الجامعي يغيّر اسم المستخدم الذي يدخل به الطالب، ويُحدَّث في حجوزاته.',sidTaken2:'هذا الرقم الجامعي مسجّل لطالب آخر.',restriction:'التقييد من الحجز',restrictHint:'التقييد يمنع الطالب من الحجز ويلغي حجوزاته القادمة، ويُرسَل له إشعار بالسبب.',restrictPh:'مثال: تكرار عدم الحضور',until:'حتى تاريخ',restrictBtn:'تقييد الحساب',liftRestrict:'رفع التقييد',restrictDone:'تم التقييد، وأُلغي {n} من حجوزاته القادمة.',liftDone:'تم رفع التقييد',
   warningsT:'الإنذارات',noWarnings:'لا توجد إنذارات.',warnPh:'سبب الإنذار…',sendWarn:'إرسال إنذار',warnHint:'يُحفظ الإنذار في سجل الطالب ويصله كرسالة.',warnSent:'تم إرسال الإنذار رقم {n}',
   deleteStu:'حذف الحساب',deleteHint:'يحذف الحساب نهائياً مع حجوزاته ورسائله وإنذاراته. لا يمكن التراجع.',typeSid:'اكتب {sid} للتأكيد',deleteForever:'حذف نهائي',studentDeleted:'تم حذف الحساب',renameStaff:'تعديل الاسم',
@@ -476,7 +476,7 @@ const T={
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
   installApp:'Install app',thisHour:'This hour',msgAllDay:'Message everyone today',
   errRestricted:'Your account is currently restricted from booking. Contact the center management.',restrictedT:'Your account is restricted from booking',restrictedUntil:'You can\u2019t book until {d}.',restrictedOpen:'You can\u2019t book until the management lifts the restriction.',restrictedHint:'For questions, message the management below.',myWarnings:'Warnings',warningN:'Warning #{n}',
-  stuAccHint2:'Student accounts are managed by system admins only: edit details, restrict booking, warnings, delete, and temporary passwords.',allStudents:'All',restrictedF:'Restricted',warnedF:'Has warnings',refresh:'Refresh',warnsN:'{n} warnings',manageStu:'Manage',
+  stuAccHint2:'Student accounts are managed by system admins only: edit details, restrict booking, warnings, delete, and temporary passwords.',allStudents:'All',restrictedF:'Restricted',warnedF:'Has warnings',refresh:'Refresh',warnsN:'{n} warnings',manageStu:'Manage',manageStuLong:'Manage student',
   editDetails:'Edit details',sidChangeNote:'Changing the student ID changes the username the student signs in with, and updates their bookings.',sidTaken2:'This student ID belongs to another student.',restriction:'Booking restriction',restrictHint:'A restriction blocks booking, cancels upcoming bookings and notifies the student with the reason.',restrictPh:'e.g. repeated no-shows',until:'Until',restrictBtn:'Restrict account',liftRestrict:'Lift restriction',restrictDone:'Restricted; {n} upcoming bookings cancelled.',liftDone:'Restriction lifted',
   warningsT:'Warnings',noWarnings:'No warnings.',warnPh:'Reason for the warning…',sendWarn:'Send warning',warnHint:'The warning is kept in the student\u2019s record and sent to them as a message.',warnSent:'Warning #{n} sent',
   deleteStu:'Delete account',deleteHint:'Permanently deletes the account with its bookings, messages and warnings. This can\u2019t be undone.',typeSid:'Type {sid} to confirm',deleteForever:'Delete permanently',studentDeleted:'Account deleted',renameStaff:'Rename',
@@ -659,6 +659,7 @@ function makeSupabaseStore(C){
     async adminWarn(uid,reason){return must(await stf.rpc('admin_warn',{p_student:uid,p_reason:reason}))},
     async adminDeleteWarning(id){must(await stf.rpc('admin_delete_warning',{p_id:id}))},
     reloadStudent(){return reloadStudent()},
+    async getStudent(uid){const r=must(await stf.from('students').select('*').eq('id',uid).maybeSingle());if(!r) return null;const w=must(await stf.from('warnings').select('id').eq('student',uid));return{uid:r.id,...stuRow(r),warnings:w.length}},
 
     /* messages */
     watchMessages(uid,cb){const c=uid===stuUid?stu:stf;return live(c,{table:'messages',filter:`student=eq.${uid}`,fetch:async()=>must(await c.from('messages').select('*').eq('student',uid).order('at',{ascending:false}).limit(100)).map(msgRow),cb})},
@@ -1159,6 +1160,7 @@ function StudentAccountsAdmin({L,lang,store,say}){
   const [list,setList]=useState(null);const [q,setQ]=useState('');const [issued,setIssued]=useState(null);const [busy,setBusy]=useState('');const [err,setErr]=useState('');
   const [manage,setManage]=useState(null);const [filter,setFilter]=useState('all');
   const load=async()=>{setErr('');try{setList(await store.listAccounts())}catch(e){setErr(L.errGeneric)}};
+  useEffect(()=>{load()},[]);
   async function issue(a){
     setBusy(a.uid);setErr('');
     try{const r=await store.adminOp('resetStudentPassword',{id:a.uid});if(!r.ok) throw r;setIssued({uid:a.uid,sid:a.sid,name:a.name,pw:r.password});await load()}catch(e){setErr(L.errGeneric)}
@@ -1194,6 +1196,12 @@ function StudentAccountsAdmin({L,lang,store,say}){
     ${err&&html`<div className="err">${err}</div>`}
     ${manage&&html`<${StudentManage} L=${L} lang=${lang} store=${store} say=${say} st=${manage} onClose=${()=>setManage(null)} onChanged=${load}/>`}
   </section>`;
+}
+
+function ManageStudentBtn({L,lang,store,say,uid,small}){
+  const [st,setSt]=useState(null);const [busy,setBusy]=useState(false);
+  const open=async()=>{setBusy(true);try{const r=await store.getStudent(uid);if(r)setSt(r);else say(L.noStudents)}catch(e){say(L.errGeneric)}setBusy(false)};
+  return html`<button className=${'btn'+(small?'':' pri')} disabled=${busy} onClick=${open}>${busy?'…':L.manageStuLong}</button>${st&&html`<${StudentManage} L=${L} lang=${lang} store=${store} say=${say} st=${st} onClose=${()=>setSt(null)} onChanged=${()=>{}}/>`}`;
 }
 
 function StudentManage({L,lang,store,say,st,onClose,onChanged}){
@@ -1428,6 +1436,7 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
             ${r.st==='booked'&&html`<button className="btn ok" onClick=${()=>act(r,'checked-in')}>${L.checkIn}</button><button className="btn bad" onClick=${()=>act(r,'no-show')}>${L.noShow}</button>`}
             ${(r.st==='checked-in'||r.st==='no-show')&&html`<button className="btn ghost" onClick=${()=>act(r,null)}>${L.undo}</button>`}
             ${r.uid&&html`<button className="btn" title=${L.sendMsg} onClick=${()=>setMsgTo([{uid:r.uid,name:r.studentName,sid:r.studentId,code:r.code}])}>${L.sendMsg}</button>`}
+            ${r.uid&&who&&who.role==='admin'&&html`<${ManageStudentBtn} L=${L} lang=${lang} store=${store} say=${say} uid=${r.uid} small=${true}/>`}
           </div></td>
         </tr>`})}</tbody>
     </table></div>
@@ -1624,6 +1633,7 @@ function StaffMessages({L,lang,store,who,threads,say}){
         <div className="row" style=${{gap:'8px'}}>
           <button className="btn ghost backBtn" onClick=${()=>setSel(null)}>${L.back}</button>
           <b>${sel.name}</b><span className="hint mono" dir="ltr">${sel.sid}</span>
+          ${who&&who.role==='admin'&&html`<span style=${{marginInlineStart:'auto'}}><${ManageStudentBtn} L=${L} lang=${lang} store=${store} say=${say} uid=${sel.uid} small=${true}/></span>`}
         </div>
         <${Bubbles} L=${L} lang=${lang} msgs=${msgs} mine="staff"/>
         <${Composer} L=${L} onSend=${send}/>`}
@@ -1763,8 +1773,8 @@ function Settings({L,lang,store,say,cfg,staff,who}){
   const newSlotId=()=>Math.max(0,...draft.slots.map(s=>+s.id||0))+1;
 
   return html`
-  <${StaffAdmin} L=${L} store=${store} staff=${staff} say=${say} who=${who}/>
   <${StudentAccountsAdmin} L=${L} lang=${lang} store=${store} say=${say}/>
+  <${StaffAdmin} L=${L} store=${store} staff=${staff} say=${say} who=${who}/>
   <section className="panel sgrid">
     <h2>${L.identity}</h2>
     <div className="row" style=${{alignItems:'flex-start',gap:'16px'}}>
