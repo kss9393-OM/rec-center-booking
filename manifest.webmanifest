@@ -1,0 +1,63 @@
+{
+  "name": "المركز الترفيهي الطلابي - الكلية العسكرية التقنية",
+  "short_name": "المركز الترفيهي",
+  "description": "حجز ساعات وألعاب المركز الترفيهي الطلابي بالكلية العسكرية التقنية · Campus Recreation Center (MTC)",
+  "lang": "ar",
+  "dir": "rtl",
+  "id": "./",
+  "start_url": "./#student",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0F5F4A",
+  "categories": [
+    "education",
+    "lifestyle",
+    "sports"
+  ],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "حجز ساعة",
+      "short_name": "حجز",
+      "url": "./#student",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "الإدارة",
+      "short_name": "الإدارة",
+      "url": "./#manage",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

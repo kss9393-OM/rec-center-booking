@@ -14,6 +14,7 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 |---|---|
 | `index.html` | التطبيق كاملاً · The whole app |
 | `config.js` | رابط Supabase ومفتاحه العام · Supabase URL and public key |
+| `manifest.webmanifest`, `sw.js`, `icons/` | تثبيت التطبيق على الهاتف · Installable app (PWA) |
 | `supabase/schema.sql` | الجداول وقواعد الحماية ودوال الحجز · Tables, security rules, booking functions |
 | `supabase/functions/admin/index.ts` | دالة الخادم لحسابات الإدارة وكلمات المرور المؤقتة · Server function for staff accounts and temporary passwords |
 
@@ -67,6 +68,13 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 - **مدير النظام:** كل ما سبق، والإعدادات، والحسابات، وإصدار كلمات مرور مؤقتة للطلاب.
 - قواعد الحجز (السعة، ساعة واحدة يومياً، أيام الإغلاق، انتهاء وقت الحجز) **يفرضها الخادم**، ولا يمكن تجاوزها من المتصفح.
 
+### تثبيت التطبيق على أندرويد
+1. افتح رابط الموقع في **Chrome** على الهاتف.
+2. اضغط زر **تثبيت التطبيق** في أعلى الصفحة، أو من قائمة Chrome (⋮) اختر **تثبيت التطبيق** / **إضافة إلى الشاشة الرئيسية**.
+3. يظهر التطبيق بشعار الكلية على الشاشة الرئيسية ويفتح بملء الشاشة. أي تحديث على GitHub يصل إليه تلقائياً.
+
+(على iPhone: افتح الرابط في Safari، ثم زر المشاركة ثم **إضافة إلى الشاشة الرئيسية**.)
+
 ---
 
 ## English: setup
@@ -116,6 +124,13 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 - **Reception staff:** check-ins, messages and reports.
 - **System admin:** all of the above plus settings, accounts and temporary student passwords.
 - Booking rules (capacity, one hour per day, closed days, booking cut-off) are **enforced by the server** and can't be bypassed from the browser.
+
+### Install on Android
+1. Open the site link in **Chrome** on the phone.
+2. Tap **Install app** at the top of the page, or Chrome's menu (⋮) → **Install app** / **Add to Home screen**.
+3. The app appears on the home screen with the college logo and opens full screen. Updates pushed to GitHub reach it automatically.
+
+(On iPhone: open the link in Safari, tap Share, then **Add to Home Screen**.)
 
 ---
 
