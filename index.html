@@ -225,6 +225,13 @@ tr.late td{background:var(--warn-soft)}
 .trow{text-align:start;border:1px solid transparent;background:transparent;border-radius:10px;padding:9px 10px;display:grid;gap:2px;min-width:0}
 .trow:hover{background:var(--surface-2)}
 .trow.on{background:var(--accent-soft);border-color:var(--accent)}
+.alRow{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);flex-wrap:wrap}
+.alRow.warn{border-color:var(--bad)}
+.alRow.read{opacity:.62}
+.alIc{font-size:20px;line-height:1.2}
+.alAct{margin-inline-start:auto}
+.alTx{white-space:pre-wrap;overflow-wrap:anywhere}
+.three{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .udot{width:9px;height:9px;border-radius:50%;background:var(--bad);flex:none}
 .tpane{display:grid;gap:10px;align-content:start;min-width:0}
 .tpane .chatLog{max-height:460px;min-height:300px}
@@ -319,7 +326,7 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=14"></script>
+<script src="config.js?v=15"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -349,6 +356,7 @@ const DEFAULT_CFG={
   weeklyOffReasons:{},   // {"5":"عطلة نهاية الأسبوع"}
   closedSlots:[],        // [{date, slots:[ids], reason}]  hours/shift closed on a date
   zoneClosures:[],       // [{section, from, to:'' = until reopened, reason}]
+  autoNoShow:{on:true,minutes:10,warnAfter:2,windowDays:30}, // server job: cancel unchecked bookings, auto-warn repeats
 };
 // Live config (replaced whenever the shared settings change)
 let CFG=DEFAULT_CFG, SECTIONS=CFG.sections, SLOTS=CFG.slots, TOTAL=0;
@@ -363,6 +371,9 @@ function normCfg(c){
   out.zoneClosures=Array.isArray(c.zoneClosures)?c.zoneClosures:[];
   out.closed=Array.isArray(c.closed)?c.closed:[];
   {const n=parseInt(c.bookAhead,10);out.bookAhead=Number.isFinite(n)?Math.max(0,Math.min(30,n)):DEFAULT_CFG.bookAhead}
+  {const a=c.autoNoShow&&typeof c.autoNoShow==='object'?c.autoNoShow:{},D=DEFAULT_CFG.autoNoShow;
+   const num=(v,lo,hi,d)=>{const n=parseInt(v,10);return Number.isFinite(n)?Math.max(lo,Math.min(hi,n)):d};
+   out.autoNoShow={on:a.on!==false,minutes:num(a.minutes,1,120,D.minutes),warnAfter:num(a.warnAfter,0,20,D.warnAfter),windowDays:num(a.windowDays,1,365,D.windowDays)}}
   return out;
 }
 function applyCfg(c){CFG=normCfg(c);SECTIONS=CFG.sections;SLOTS=CFG.slots;TOTAL=SECTIONS.reduce((a,s)=>a+(+s.cap||0),0);return CFG}
@@ -462,6 +473,8 @@ const T={
   msgTab:'الرسائل',chatTitle:'المراسلة مع الإدارة',chatHint:'اكتب استفسارك وسيرد عليك أحد الموظفين هنا.',chatPh:'اكتب رسالة…',you2:'أنت',staffLbl:'الإدارة',
   convos:'المحادثات',newConvo:'محادثة جديدة',sidPh:'الرقم الجامعي',open2:'فتح',noConvos:'لا توجد محادثات بعد.',pickConvo:'اختر محادثة أو ابدأ واحدة جديدة.',
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
+  alertsTab:'التنبيهات',alertsT:'تنبيهات المشرف',alAll:'الكل',alUnread:'غير المقروءة',alReadAll:'تعليم الكل كمقروء',alMark:'تمت القراءة',alNone:'لا توجد تنبيهات.',alKindN:'عدم حضور — إلغاء تلقائي',alKindW:'إنذار تلقائي',alReadBy:'قرأه: {n}',
+  autoT:'الإلغاء التلقائي لعدم الحضور',autoOn:'مفعّل',autoOff:'متوقف',autoHint:'يعمل على الخادم كل دقيقة: إذا لم يُسجَّل حضور الطالب بعد بداية الساعة بالمدة المحددة يُلغى الحجز ويتحرر المقعد ويُبلَّغ الطالب والمشرف. عند تكرار عدم الحضور يصدر إنذار تلقائي.',autoMin:'الإلغاء بعد (دقائق)',autoWarn:'إنذار تلقائي بعد (مرات عدم حضور، 0 = بدون)',autoWin:'خلال فترة (أيام)',autoPrev:'يُلغى الحجز بعد {m} دقائق من بداية الساعة دون تسجيل حضور.',autoPrevW:'إنذار تلقائي عند {n} مرات عدم حضور خلال {d} يوماً.',autoPrevNoW:'بدون إنذار تلقائي.',autoPrevOff:'الإلغاء التلقائي متوقف؛ يسجّل الموظفون عدم الحضور يدوياً.',vAuto:'قيم الإلغاء التلقائي: الدقائق 1–120، المرات 0–20، الأيام 1–365.',
   windowT:'فترة الحجز المتاحة للطلاب',windowHint:'حدّد إلى أي يوم يستطيع الطلاب الحجز مقدماً. يُطبَّق على الخادم فوراً.',win0:'اليوم فقط',win1:'اليوم وغداً',win2:'حتى بعد غد',winN:'عدد الأيام القادمة:',winPreview:'يرى الطلاب {n} يوم/أيام للحجز (بما فيها اليوم).',vAhead:'عدد الأيام القادمة من 0 إلى 30.',errTooFar:'لا يمكن الحجز لهذا اليوم بعد؛ الحجز متاح لأيام محددة مقدماً.',
   msgAllShift:'رسالة لكل طلاب هذه الفترة',oneDay:'يوم واحد',dateRange:'عدة أيام',rptFrom:'من',rptTo:'إلى',rptDays:'أيام',rptByDay:'حسب اليوم',rptCont:'تابع',windowDays:'{n} أيام',badRange:'اختر تاريخ بداية ونهاية صحيحين (حتى 62 يوماً).',
   weeklyReasonPh:'سبب الإجازة، مثل: عطلة نهاية الأسبوع',closedHoursT:'إغلاق ساعات أو فترة في يوم محدد',closedHoursHint:'اختر اليوم ثم الفترة أو الساعات المغلقة، واكتب السبب. يبقى باقي اليوم متاحاً.',noClosedHours:'لا توجد ساعات مغلقة.',closedHoursPh:'السبب، مثل: فعالية في المركز',addClosedHours:'إغلاق ساعات',
@@ -554,6 +567,8 @@ const T={
   msgTab:'Messages',chatTitle:'Messages with the center',chatHint:'Write your question and a staff member will reply here.',chatPh:'Write a message…',you2:'You',staffLbl:'Center staff',
   convos:'Conversations',newConvo:'New conversation',sidPh:'Student ID',open2:'Open',noConvos:'No conversations yet.',pickConvo:'Pick a conversation or start a new one.',
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
+  alertsTab:'Alerts',alertsT:'Supervisor alerts',alAll:'All',alUnread:'Unread',alReadAll:'Mark all read',alMark:'Mark read',alNone:'No alerts.',alKindN:'No-show — cancelled automatically',alKindW:'Automatic warning',alReadBy:'Read by: {n}',
+  autoT:'Automatic no-show cancellation',autoOn:'On',autoOff:'Off',autoHint:'Runs on the server every minute: if a student hasn’t checked in this long after the hour starts, the booking is cancelled, the seat is freed, and the student and supervisors are notified. Repeated no-shows trigger an automatic warning.',autoMin:'Cancel after (minutes)',autoWarn:'Auto-warning after (no-shows, 0 = never)',autoWin:'Within (days)',autoPrev:'A booking is cancelled {m} minutes after the hour starts with no check-in.',autoPrevW:'Automatic warning at {n} no-shows within {d} days.',autoPrevNoW:'No automatic warning.',autoPrevOff:'Automatic cancellation is off; staff mark no-shows by hand.',vAuto:'Auto-cancel values: minutes 1–120, no-shows 0–20, days 1–365.',
   windowT:'Student booking window',windowHint:'Choose how far ahead students can book. Enforced by the server immediately.',win0:'Today only',win1:'Today and tomorrow',win2:'Through the day after',winN:'Days ahead:',winPreview:'Students see {n} day(s) to book, including today.',vAhead:'Days ahead must be 0 to 30.',errTooFar:'That day isn’t open for booking yet.',
   msgAllShift:'Message everyone this shift',oneDay:'One day',dateRange:'Date range',rptFrom:'From',rptTo:'To',rptDays:'days',rptByDay:'By day',rptCont:'cont.',windowDays:'{n} days',badRange:'Choose a valid start and end date (up to 62 days).',
   weeklyReasonPh:'Reason, e.g. weekend',closedHoursT:'Close hours or a shift on a date',closedHoursHint:'Pick the date, then the shift or hours to close, and give a reason. The rest of the day stays open.',noClosedHours:'No closed hours.',closedHoursPh:'Reason, e.g. event at the center',addClosedHours:'Close hours',
@@ -773,6 +788,8 @@ function makeSupabaseStore(C){
     watchThreads(cb){return live(stf,{table:'threads',fetch:async()=>must(await stf.from('threads').select('*').order('last_at',{ascending:false}).limit(300)).map(r=>({uid:r.student,sid:r.sid,name:r.name,lastAt:ms(r.last_at),lastText:r.last_text,lastFrom:r.last_from,staffSeenAt:ms(r.staff_seen_at)})),cb})},
     async fetchRange(from,to){return split(must(await stf.from('bookings').select('*').gte('date',from).lte('date',to).order('date').limit(5000)))},
     async scanTicket(t,force){return must(await stf.rpc('scan_ticket',{p_id:t.id||'',p_code:t.code||'',p_date:t.date||'',p_force:!!force}))},
+    watchAlerts(cb){return live(stf,{table:'alerts',fetch:async()=>must(await stf.from('alerts').select('*').order('at',{ascending:false}).limit(100)).map(r=>({id:r.id,kind:r.kind,uid:r.student,text:r.text,at:ms(r.at),readAt:ms(r.read_at),readBy:r.read_by})),cb})},
+    async markAlertsRead(ids){must(await stf.rpc('mark_alerts_read',{p_ids:ids&&ids.length?ids:null}))},
     async markThreadSeen(uid){try{await stf.rpc('mark_thread_seen',{p_student:uid})}catch(e){}},
   };
 }
@@ -1936,6 +1953,13 @@ function Manage({L,lang,store,say,tick,cfg,staff,who,onSignOut}){
   useEffect(()=>store.watchThreads(setThreads),[store]);
   useEffect(()=>{const h=()=>{if(!window.__crcScannerOn)pick('scan')};window.addEventListener('crc-scan',h);return()=>window.removeEventListener('crc-scan',h)},[]);
   const unreadT=threads.filter(threadUnread).length;
+  const [alerts,setAlerts]=useState([]);const seenA=useRef(null);
+  useEffect(()=>store.watchAlerts?store.watchAlerts(setAlerts):undefined,[store]);
+  useEffect(()=>{const ids=alerts.map(a=>a.id);
+    if(seenA.current){const fresh=alerts.filter(a=>!a.readAt&&!seenA.current.has(a.id));
+      if(fresh.length){say((fresh[0].kind==='auto_warning'?'⚠️ ':'⏰ ')+fresh[0].text);beep('warn')}}
+    seenA.current=new Set(ids)},[alerts]);
+  const unreadA=alerts.filter(a=>!a.readAt).length;
   return html`
   <div className="row signbar mgBar">
     <span className="hint hideSm">${L.signedAs}</span><b>${who.name}</b>${who.u&&html`<span className="hint mono hideSm" dir="ltr">@${who.u}</span>`}
@@ -1945,15 +1969,50 @@ function Manage({L,lang,store,say,tick,cfg,staff,who,onSignOut}){
         <button aria-pressed=${tab==='scan'} onClick=${()=>pick('scan')}>${L.scanTab}</button>
         <button aria-pressed=${tab==='desk'} onClick=${()=>pick('desk')}>${L.deskTab}</button>
         <button aria-pressed=${tab==='msgs'} onClick=${()=>pick('msgs')}>${L.msgTab}${unreadT>0&&html` <span className="dot num">${unreadT}</span>`}</button>
+        <button aria-pressed=${tab==='alerts'} aria-label=${L.alertsTab} onClick=${()=>pick('alerts')}>🔔${unreadA>0?html` <span className="dot num">${unreadA}</span>`:html`<span className="hideSm"> ${L.alertsTab}</span>`}</button>
         ${isAdmin&&html`<button aria-pressed=${tab==='settings'} onClick=${()=>pick('settings')}>${L.settingsTab}</button>`}
       </div>
       ${onSignOut&&html`<button className="btn" onClick=${onSignOut}>${L.signOut}</button>`}
     </div>
   </div>
   ${tab==='settings'?html`<${Settings} L=${L} lang=${lang} store=${store} say=${say} cfg=${cfg} staff=${staff} who=${who}/>`:
+    tab==='alerts'?html`<${Alerts} L=${L} lang=${lang} store=${store} say=${say} who=${who} alerts=${alerts} cfg=${cfg}/>`:
     tab==='msgs'?html`<${StaffMessages} L=${L} lang=${lang} store=${store} who=${who} threads=${threads} say=${say}/>`:
     tab==='scan'?html`<${Scanner} L=${L} lang=${lang} store=${store} say=${say} who=${who}/>`:
     html`<${Desk} L=${L} lang=${lang} store=${store} say=${say} tick=${tick} cfg=${cfg} who=${who}/>`}`;
+}
+
+/* ---------- Supervisor alerts (automatic no-shows and warnings) ---------- */
+function Alerts({L,lang,store,say,who,alerts,cfg}){
+  const [only,setOnly]=useState(false);const [busy,setBusy]=useState(false);
+  const isAdmin=who&&who.role==='admin';
+  const list=only?alerts.filter(a=>!a.readAt):alerts;
+  const unread=alerts.filter(a=>!a.readAt).length;
+  const mark=async ids=>{setBusy(true);try{await store.markAlertsRead(ids)}catch(e){say(L.errGeneric)}setBusy(false)};
+  const a=(cfg&&cfg.autoNoShow)||CFG.autoNoShow;
+  return html`<section className="panel sgrid">
+    <div className="row" style=${{justifyContent:'space-between'}}>
+      <h2 style=${{margin:0}}>🔔 ${L.alertsT}</h2>
+      <div className="row" style=${{gap:'8px'}}>
+        <div className="seg"><button aria-pressed=${!only} onClick=${()=>setOnly(false)}>${L.alAll}</button><button aria-pressed=${only} onClick=${()=>setOnly(true)}>${L.alUnread} <span className="num">(${unread})</span></button></div>
+        <button className="btn" disabled=${busy||!unread} onClick=${()=>mark(null)}>${L.alReadAll}</button>
+      </div>
+    </div>
+    <p className="hint num" style=${{margin:0}}>${a.on?L.autoPrev.replace('{m}',a.minutes)+' '+(a.warnAfter>0?L.autoPrevW.replace('{n}',a.warnAfter).replace('{d}',a.windowDays):L.autoPrevNoW):L.autoPrevOff}</p>
+    ${list.length===0?html`<div className="empty">${L.alNone}</div>`:html`<div className="zlist">${list.map(x=>html`
+      <div key=${x.id} className=${'alRow'+(x.readAt?' read':'')+(x.kind==='auto_warning'?' warn':'')}>
+        <span className="alIc" aria-hidden="true">${x.kind==='auto_warning'?'⚠️':'⏰'}</span>
+        <div style=${{minWidth:0,flex:'1 1 240px'}}>
+          <div className="row" style=${{gap:'6px'}}><b>${x.kind==='auto_warning'?L.alKindW:L.alKindN}</b>${!x.readAt&&html`<span className="udot" aria-label=${L.newBadge}></span>`}<span className="hint num" style=${{fontSize:'12px',marginInlineStart:'auto'}}>${fmtStamp(x.at,lang)}</span></div>
+          <div className="alTx">${x.text}</div>
+          ${x.readAt?html`<div className="hint" style=${{fontSize:'11.5px'}}>${L.alReadBy.replace('{n}',x.readBy||'')}</div>`:null}
+        </div>
+        <div className="row alAct" style=${{gap:'6px'}}>
+          ${isAdmin&&x.uid&&html`<${ManageStudentBtn} L=${L} lang=${lang} store=${store} say=${say} uid=${x.uid} small=${true}/>`}
+          ${!x.readAt&&html`<button className="btn ghost" disabled=${busy} onClick=${()=>mark([x.id])}>${L.alMark}</button>`}
+        </div>
+      </div>`)}</div>`}
+  </section>`;
 }
 
 /* ---------- Staff messages ---------- */
@@ -2114,6 +2173,8 @@ function validate(c,L){
   for(const x of c.closed) if(!/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')) return L.vDate;
   if(c.bookAhead===''||!(+c.bookAhead>=0&&+c.bookAhead<=30)) return L.vAhead;
   for(const x of c.closedSlots||[]){if(!/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')) return L.vDate;if(!(x.slots||[]).length) return L.vClosedHours}
+  {const a=c.autoNoShow||{};const ok=(v,lo,hi)=>v!==''&&Number.isInteger(+v)&&+v>=lo&&+v<=hi;
+   if(!ok(a.minutes,1,120)||!ok(a.warnAfter,0,20)||!ok(a.windowDays,1,365)) return L.vAuto}
   for(const x of c.zoneClosures||[]){if(!x.section||!c.sections.some(z=>z.id===x.section)) return L.vClosedZone;if(!/^\d{4}-\d{2}-\d{2}$/.test(x.from||'')) return L.vDate;if(x.to&&x.to<x.from) return L.vRange}
   return '';
 }
@@ -2132,6 +2193,7 @@ function Settings({L,lang,store,say,cfg,staff,who}){
     c.slots.sort((a,b)=>toMin(a.s)-toMin(b.s));c.closed=c.closed.filter(x=>x.date).sort((a,b)=>a.date<b.date?-1:1);
     const v=validate(c,L);if(v){setErr(v);return}
     c.bookAhead=+c.bookAhead;
+    c.autoNoShow={on:!!c.autoNoShow.on,minutes:+c.autoNoShow.minutes,warnAfter:+c.autoNoShow.warnAfter,windowDays:+c.autoNoShow.windowDays};
     c.closedSlots=(c.closedSlots||[]).map(x=>({date:x.date,slots:[...new Set((x.slots||[]).map(Number))].filter(id=>c.slots.some(z=>z.id===id)),reason:(x.reason||'').trim()}));
     c.zoneClosures=(c.zoneClosures||[]).map(x=>({section:x.section,from:x.from,to:x.to||'',reason:(x.reason||'').trim()}));
     {const r={};(c.weeklyOff||[]).forEach(k=>{const v=((c.weeklyOffReasons||{})[k]||'').trim();if(v)r[k]=v});c.weeklyOffReasons=r}
@@ -2196,6 +2258,16 @@ function Settings({L,lang,store,say,cfg,staff,who}){
       </div>
     </div>
     <p className="hint num" style=${{margin:0}}>${L.winPreview.replace('{n}',(+draft.bookAhead||0)+1)}</p>
+  </section>
+
+  <section className="panel sgrid">
+    <div className="row" style=${{justifyContent:'space-between'}}><h2 style=${{margin:0}}>${L.autoT}</h2>
+      <label className="row" style=${{gap:'6px',cursor:'pointer'}}><input id="st-auto-on" type="checkbox" checked=${draft.autoNoShow.on} onChange=${e=>{const v=e.target.checked;up(d=>{d.autoNoShow.on=v})}}/><b>${draft.autoNoShow.on?L.autoOn:L.autoOff}</b></label></div>
+    <p className="hint" style=${{margin:0}}>${L.autoHint}</p>
+    <div className="three">
+      ${[['minutes',L.autoMin,1,120],['warnAfter',L.autoWarn,0,20],['windowDays',L.autoWin,1,365]].map(([k,t,lo,hi])=>html`<div key=${k} className="field"><label htmlFor=${'st-auto-'+k}>${t}</label><input id=${'st-auto-'+k} type="number" min=${lo} max=${hi} inputMode="numeric" className="num" disabled=${!draft.autoNoShow.on} value=${draft.autoNoShow[k]} onInput=${e=>{const v=e.target.value;up(d=>{d.autoNoShow[k]=v===''?'':parseInt(v,10)})}}/></div>`)}
+    </div>
+    <p className="hint num" style=${{margin:0}}>${!draft.autoNoShow.on?L.autoPrevOff:(L.autoPrev.replace('{m}',draft.autoNoShow.minutes||'?')+' '+(+draft.autoNoShow.warnAfter>0?L.autoPrevW.replace('{n}',draft.autoNoShow.warnAfter).replace('{d}',draft.autoNoShow.windowDays||'?'):L.autoPrevNoW))}</p>
   </section>
 
   <section className="panel sgrid">

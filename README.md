@@ -69,6 +69,10 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 - **مدير النظام:** كل ما سبق، والإعدادات، والحسابات، وإصدار كلمات مرور مؤقتة للطلاب.
 - قواعد الحجز (السعة، ساعة واحدة يومياً، أيام الإغلاق، انتهاء وقت الحجز) **يفرضها الخادم**، ولا يمكن تجاوزها من المتصفح.
 
+### الإلغاء التلقائي لعدم الحضور
+
+تعمل مهمة على الخادم كل دقيقة (pg_cron). إذا لم يُسجَّل حضور الطالب بعد بداية الساعة بـ 10 دقائق (قابلة للتعديل) يُلغى الحجز ويتحرر المقعد، ويصل للطالب إشعار وللمشرفين تنبيه في تبويب 🔔 التنبيهات. عند تكرار عدم الحضور (مرتان خلال 30 يوماً افتراضياً) يصدر إنذار تلقائي ويُنبَّه المشرف. تُضبط القيم أو يُوقف ذلك من الإعدادات. إذا لم يُفعَّل pg_cron عند التثبيت شغّل `supabase/migrations/008_auto_no_show_schedule.sql`.
+
 ### تطبيق أندرويد (APK)
 يُبنى التطبيق تلقائياً على GitHub مع كل تحديث لمجلد `android/`، ويُنشر في صفحة **Releases** باسم **Android app**.
 - **رابط التنزيل الدائم:** https://github.com/kss9393-OM/rec-center-booking/releases/latest/download/rec-center.apk
@@ -143,6 +147,10 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 - **Reception staff:** check-ins, messages and reports.
 - **System admin:** all of the above plus settings, accounts and temporary student passwords.
 - Booking rules (capacity, one hour per day, closed days, booking cut-off) are **enforced by the server** and can't be bypassed from the browser.
+
+### Automatic no-show cancellation
+
+A server job runs every minute (pg_cron). If a student hasn't checked in 10 minutes (adjustable) after the hour starts, the booking is cancelled, the seat is freed, the student is notified, and supervisors get an alert under the 🔔 Alerts tab. Repeated no-shows (2 within 30 days by default) trigger an automatic warning and a supervisor alert. Adjust or switch this off in Settings. If pg_cron wasn't enabled during install, run `supabase/migrations/008_auto_no_show_schedule.sql`.
 
 ### Android app (APK)
 GitHub builds the app automatically on every change under `android/` and publishes it on the **Android app** release.
