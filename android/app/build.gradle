@@ -1,0 +1,42 @@
+// Campus Recreation Center — Android app. © 2026 Services Squire LLC.
+plugins { id 'com.android.application' }
+
+def ksPassword = System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: ''
+def runNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int
+
+android {
+    namespace 'com.servicessquire.crc'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.servicessquire.crc'
+        minSdk 26
+        targetSdk 34
+        versionCode runNumber
+        versionName "1.0.${runNumber}"
+    }
+
+    signingConfigs {
+        release {
+            // The keystore file is encrypted with this password, which lives only in GitHub Secrets.
+            storeFile file('../keystore/crc-release.jks')
+            storePassword ksPassword
+            keyAlias 'crc'
+            keyPassword ksPassword
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (ksPassword) signingConfig signingConfigs.release
+        }
+    }
+
+    buildFeatures { buildConfig true }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

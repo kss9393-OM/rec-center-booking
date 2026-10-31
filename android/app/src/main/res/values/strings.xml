@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">المركز الترفيهي</string>
+    <string name="saved">تم الحفظ في التنزيلات</string>
+    <string name="offline">لا يوجد اتصال بالإنترنت. تحقق من الاتصال ثم اسحب للتحديث.</string>
+</resources>

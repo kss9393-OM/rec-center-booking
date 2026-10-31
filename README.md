@@ -15,6 +15,7 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 | `index.html` | التطبيق كاملاً · The whole app |
 | `config.js` | رابط Supabase ومفتاحه العام · Supabase URL and public key |
 | `manifest.webmanifest`, `sw.js`, `icons/` | تثبيت التطبيق على الهاتف · Installable app (PWA) |
+| `android/`, `.github/workflows/android.yml` | تطبيق أندرويد (APK) · Android app |
 | `supabase/schema.sql` | الجداول وقواعد الحماية ودوال الحجز · Tables, security rules, booking functions |
 | `supabase/functions/admin/index.ts` | دالة الخادم لحسابات الإدارة وكلمات المرور المؤقتة · Server function for staff accounts and temporary passwords |
 
@@ -67,6 +68,14 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 - **موظف الاستقبال:** الحضور، والرسائل، والتقارير.
 - **مدير النظام:** كل ما سبق، والإعدادات، والحسابات، وإصدار كلمات مرور مؤقتة للطلاب.
 - قواعد الحجز (السعة، ساعة واحدة يومياً، أيام الإغلاق، انتهاء وقت الحجز) **يفرضها الخادم**، ولا يمكن تجاوزها من المتصفح.
+
+### تطبيق أندرويد (APK)
+يُبنى التطبيق تلقائياً على GitHub مع كل تحديث لمجلد `android/`، ويُنشر في صفحة **Releases** باسم **Android app**.
+- **رابط التنزيل الدائم:** https://github.com/kss9393-OM/rec-center-booking/releases/latest/download/rec-center.apk
+- **التثبيت:** افتح الرابط على الجهاز ← نزّل الملف ← افتحه ← اسمح بالتثبيت من هذا المصدر عند السؤال ← **تثبيت**.
+- **على أجهزة Honeywell (مثل EDA52):** يقرأ التطبيق الماسح مباشرة دون أي إعداد في الجهاز. على الأجهزة الأخرى يعمل المسح بالكاميرا.
+- **التحديث:** نزّل الملف من نفس الرابط وثبّته فوق النسخة الحالية.
+- **التوقيع:** ملف المفتاح `android/keystore/crc-release.jks` مشفّر بكلمة مرور محفوظة فقط في **Settings ← Secrets and variables ← Actions** باسم `ANDROID_KEYSTORE_PASSWORD`. احتفظ بنسخة من كلمة المرور في مكان آمن؛ بدونها لا يمكن إصدار تحديثات تُثبَّت فوق التطبيق.
 
 ### ماسح التذاكر (Honeywell EDA52 وأجهزة المسح المشابهة)
 **إعداد الجهاز مرة واحدة:** الإعدادات ← **Honeywell Settings** ← **Scanning** ← **Internal Scanner** ← **Default Profile** ← **Data Processing Settings**:
@@ -134,6 +143,14 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 - **Reception staff:** check-ins, messages and reports.
 - **System admin:** all of the above plus settings, accounts and temporary student passwords.
 - Booking rules (capacity, one hour per day, closed days, booking cut-off) are **enforced by the server** and can't be bypassed from the browser.
+
+### Android app (APK)
+GitHub builds the app automatically on every change under `android/` and publishes it on the **Android app** release.
+- **Permanent download link:** https://github.com/kss9393-OM/rec-center-booking/releases/latest/download/rec-center.apk
+- **Install:** open the link on the device → download → open the file → allow installs from this source when asked → **Install**.
+- **On Honeywell devices (e.g. EDA52):** the app reads the scanner directly, with no device setup. Other phones can scan with the camera.
+- **Update:** download from the same link and install over the current version.
+- **Signing:** the key file `android/keystore/crc-release.jks` is encrypted with a password kept only in **Settings → Secrets and variables → Actions** as `ANDROID_KEYSTORE_PASSWORD`. Keep a copy of the password somewhere safe; without it, updates can't be installed over the app.
 
 ### Ticket scanner (Honeywell EDA52 and similar devices)
 **One-time device setup:** Settings → **Honeywell Settings** → **Scanning** → **Internal Scanner** → **Default Profile** → **Data Processing Settings**:

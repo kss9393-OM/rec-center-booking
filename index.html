@@ -14,6 +14,8 @@
 <script>
   // Remember Android's install offer so the app can show its own "Install" button.
   window.__bip=null;
+  // Scans delivered by the Android app (Honeywell hardware scanner).
+  window.__crcScan=function(text){window.__crcPendingScan=String(text||'');window.dispatchEvent(new CustomEvent('crc-scan',{detail:window.__crcPendingScan}))};
   window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__bip=e;window.dispatchEvent(new Event('crc-installable'))});
   if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 </script>
@@ -296,7 +298,7 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=10"></script>
+<script src="config.js?v=11"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -1540,6 +1542,11 @@ function exportRows(b,d,date,period,withCancelled){
     .sort((a,b2)=>toMin(slotById(a.slotId).s)-toMin(slotById(b2.slotId).s)||SECTIONS.findIndex(s=>s.id===a.section)-SECTIONS.findIndex(s=>s.id===b2.section)||a.studentName.localeCompare(b2.studentName));
 }
 async function saveFile(name,blob){
+  if(window.AndroidApp&&AndroidApp.saveFile){
+    const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=rej;r.readAsDataURL(blob)});
+    if(AndroidApp.saveFile(name,blob.type||'application/octet-stream',b64)) return;
+    throw new Error('save failed');
+  }
   let dl=null;try{dl=window.claude&&claude.use?await claude.use('downloads'):null}catch(e){}
   if(dl){await dl.save({filename:name,data:blob});return}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
@@ -1662,7 +1669,7 @@ function beep(kind){
     let t=_ac.currentTime;
     tones.forEach(([f,d])=>{const o=_ac.createOscillator(),g=_ac.createGain();o.type='square';o.frequency.value=f;g.gain.value=.08;o.connect(g);g.connect(_ac.destination);o.start(t);o.stop(t+d);t+=d+.04});
   }catch(e){}
-  try{navigator.vibrate&&navigator.vibrate(kind==='ok'?60:kind==='warn'?[80,60,80]:[220,80,220])}catch(e){}
+  try{if(window.AndroidApp&&AndroidApp.vibrate)AndroidApp.vibrate(kind==='ok'?60:kind==='warn'?160:400);else navigator.vibrate&&navigator.vibrate(kind==='ok'?60:kind==='warn'?[80,60,80]:[220,80,220])}catch(e){}
 }
 const SCAN_KIND={ok:'ok',already:'warn',early:'warn',ended:'warn',was_no_show:'warn',ambiguous:'warn',future_day:'bad',past_day:'bad',cancelled:'bad',not_found:'bad',invalid:'bad',error:'bad'};
 
@@ -1695,7 +1702,12 @@ function Scanner({L,lang,store,say,who}){
   const hasCam=typeof window.BarcodeDetector!=='undefined'&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
   const keep=e=>e.preventDefault();
   const focus=()=>{const el=inp.current;if(el&&document.activeElement!==el)el.focus({preventScroll:true})};
-  useEffect(()=>{focus();let lock=null;(async()=>{try{lock=await navigator.wakeLock.request('screen')}catch(e){}})();return()=>{try{lock&&lock.release()}catch(e){}}},[]);
+  useEffect(()=>{focus();let lock=null;(async()=>{try{lock=await navigator.wakeLock.request('screen')}catch(e){}})();try{window.AndroidApp&&AndroidApp.keepScreenOn(true)}catch(e){}
+    return()=>{try{lock&&lock.release()}catch(e){}try{window.AndroidApp&&AndroidApp.keepScreenOn(false)}catch(e){}}},[]);
+  const submitRef=useRef(null);
+  useEffect(()=>{window.__crcScannerOn=true;const h=e=>{window.__crcPendingScan=null;submitRef.current&&submitRef.current(e.detail)};window.addEventListener('crc-scan',h);
+    if(window.__crcPendingScan){const v=window.__crcPendingScan;window.__crcPendingScan=null;setTimeout(()=>submitRef.current&&submitRef.current(v),0)}
+    return()=>{window.__crcScannerOn=false;window.removeEventListener('crc-scan',h)}},[]);
   // keep the scan field focused, unless the user is typing somewhere else or a window is open
   const onBlur=()=>{setTimeout(()=>{if(document.activeElement!==inp.current)setFocused(false)},250);setTimeout(()=>{const a=document.activeElement;if(cam||document.querySelector('.scrim')) return;if(!a||a===document.body||a.tagName==='BUTTON')focus()},60)};
   // a key pressed while the field isn't focused (e.g. right after tapping a button) still reaches it
@@ -1715,6 +1727,7 @@ function Scanner({L,lang,store,say,who}){
     try{const r=await store.scanTicket(t,force);show({...r,raw:text,t})}catch(e){show({result:'error',raw:text})}
     setBusy(false);focus();
   }
+  submitRef.current=submit;
   function show(r){
     const kind=SCAN_KIND[r.result]||'bad';
     if(sound)beep(kind);else try{navigator.vibrate&&navigator.vibrate(kind==='ok'?60:[80,60,80])}catch(e){}
@@ -1785,6 +1798,7 @@ function Manage({L,lang,store,say,tick,cfg,staff,who,onSignOut}){
   const pick=t=>{setSub(t);ls.set('crc.manageTab',t)};
   const [threads,setThreads]=useState([]);
   useEffect(()=>store.watchThreads(setThreads),[store]);
+  useEffect(()=>{const h=()=>{if(!window.__crcScannerOn)pick('scan')};window.addEventListener('crc-scan',h);return()=>window.removeEventListener('crc-scan',h)},[]);
   const unreadT=threads.filter(threadUnread).length;
   return html`
   <div className="row signbar mgBar">

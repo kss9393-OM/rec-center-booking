@@ -5,7 +5,7 @@
 // fast and still opens on a weak connection. Data from Supabase is never cached:
 // bookings, accounts and messages always come live from the server.
 
-const VERSION = 'crc-v6';
+const VERSION = 'crc-v7';
 const SHELL = [
   './',
   './index.html',
