@@ -252,6 +252,8 @@ details summary{list-style-position:inside}
 .mgSec h3{font-size:15px;display:flex;align-items:center;gap:8px}
 .dangerSec h3{color:var(--bad)}
 .warnBox{border-color:var(--warn)}
+.viewSeg{flex-wrap:wrap}.viewSeg button{white-space:nowrap}
+.pz.on,.pz[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .scanBar{display:grid;gap:10px;border-width:2px;cursor:text}
 .scanBar.on{border-color:var(--ok)}
 .scanStatus{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
@@ -298,7 +300,7 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=11"></script>
+<script src="config.js?v=12"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -323,6 +325,7 @@ const DEFAULT_CFG={
     {id:7,shift:'e',s:'18:30',e:'19:30'},{id:8,shift:'e',s:'19:30',e:'20:30'},
   ],
   weeklyOff:[],          // 0=Sun … 6=Sat
+  bookAhead:6,           // days ahead students may book (0 = today only)
   closed:[],             // [{date:'YYYY-MM-DD', reason:'…'}]
 };
 // Live config (replaced whenever the shared settings change)
@@ -334,6 +337,7 @@ function normCfg(c){
   out.slots=(Array.isArray(c.slots)&&c.slots.length?c.slots:DEFAULT_CFG.slots).slice().sort((a,b)=>toMin(a.s)-toMin(b.s));
   out.weeklyOff=Array.isArray(c.weeklyOff)?c.weeklyOff:[];
   out.closed=Array.isArray(c.closed)?c.closed:[];
+  {const n=parseInt(c.bookAhead,10);out.bookAhead=Number.isFinite(n)?Math.max(0,Math.min(30,n)):DEFAULT_CFG.bookAhead}
   return out;
 }
 function applyCfg(c){CFG=normCfg(c);SECTIONS=CFG.sections;SLOTS=CFG.slots;TOTAL=SECTIONS.reduce((a,s)=>a+(+s.cap||0),0);return CFG}
@@ -431,6 +435,8 @@ const T={
   msgTab:'الرسائل',chatTitle:'المراسلة مع الإدارة',chatHint:'اكتب استفسارك وسيرد عليك أحد الموظفين هنا.',chatPh:'اكتب رسالة…',you2:'أنت',staffLbl:'الإدارة',
   convos:'المحادثات',newConvo:'محادثة جديدة',sidPh:'الرقم الجامعي',open2:'فتح',noConvos:'لا توجد محادثات بعد.',pickConvo:'اختر محادثة أو ابدأ واحدة جديدة.',
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
+  windowT:'فترة الحجز المتاحة للطلاب',windowHint:'حدّد إلى أي يوم يستطيع الطلاب الحجز مقدماً. يُطبَّق على الخادم فوراً.',win0:'اليوم فقط',win1:'اليوم وغداً',win2:'حتى بعد غد',winN:'عدد الأيام القادمة:',winPreview:'يرى الطلاب {n} يوم/أيام للحجز (بما فيها اليوم).',vAhead:'عدد الأيام القادمة من 0 إلى 30.',errTooFar:'لا يمكن الحجز لهذا اليوم بعد؛ الحجز متاح لأيام محددة مقدماً.',
+  msgAllShift:'رسالة لكل طلاب هذه الفترة',oneDay:'يوم واحد',dateRange:'عدة أيام',rptFrom:'من',rptTo:'إلى',rptDays:'أيام',rptByDay:'حسب اليوم',rptCont:'تابع',windowDays:'{n} أيام',badRange:'اختر تاريخ بداية ونهاية صحيحين (حتى 62 يوماً).',
   scanTab:'المسح',scanReady:'جاهز — اضغط زر المسح',scanTapToStart:'اضغط هنا لتفعيل المسح',scanCount:'دخل {n}',scanWaitPh:'بانتظار مسح التذكرة…',scanTypePh:'اكتب رمز التذكرة، مثل CRC-2026-AB12',scanCheck:'تحقق',scanManual:'إدخال يدوي',scanAuto:'العودة للمسح',soundOn:'الصوت: يعمل',soundOff:'الصوت: متوقف',
   scanIdleT:'امسح تذكرة الطالب',scanIdleH:'وجّه الماسح إلى رمز QR في تذكرة الطالب. يُسجَّل الدخول تلقائياً وتظهر النتيجة هنا.',scanRecent:'آخر عمليات المسح',
   camScan:'المسح بالكاميرا',camHint:'وجّه الكاميرا إلى رمز QR.',camFail:'تعذّر تشغيل الكاميرا. اسمح للموقع باستخدامها، أو استخدم ماسح الجهاز.',
@@ -514,6 +520,8 @@ const T={
   msgTab:'Messages',chatTitle:'Messages with the center',chatHint:'Write your question and a staff member will reply here.',chatPh:'Write a message…',you2:'You',staffLbl:'Center staff',
   convos:'Conversations',newConvo:'New conversation',sidPh:'Student ID',open2:'Open',noConvos:'No conversations yet.',pickConvo:'Pick a conversation or start a new one.',
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
+  windowT:'Student booking window',windowHint:'Choose how far ahead students can book. Enforced by the server immediately.',win0:'Today only',win1:'Today and tomorrow',win2:'Through the day after',winN:'Days ahead:',winPreview:'Students see {n} day(s) to book, including today.',vAhead:'Days ahead must be 0 to 30.',errTooFar:'That day isn’t open for booking yet.',
+  msgAllShift:'Message everyone this shift',oneDay:'One day',dateRange:'Date range',rptFrom:'From',rptTo:'To',rptDays:'days',rptByDay:'By day',rptCont:'cont.',windowDays:'{n} days',badRange:'Choose a valid start and end date (up to 62 days).',
   scanTab:'Scan',scanReady:'Ready — press the scan button',scanTapToStart:'Tap here to start scanning',scanCount:'{n} in',scanWaitPh:'Waiting for a ticket scan…',scanTypePh:'Type the ticket code, e.g. CRC-2026-AB12',scanCheck:'Check',scanManual:'Type a code',scanAuto:'Back to scanning',soundOn:'Sound: on',soundOff:'Sound: off',
   scanIdleT:'Scan a student’s ticket',scanIdleH:'Aim the scanner at the QR code on the student’s pass. Check-in happens automatically and the result shows here.',scanRecent:'Recent scans',
   camScan:'Scan with camera',camHint:'Point the camera at the QR code.',camFail:'Couldn’t start the camera. Allow camera access, or use the device scanner.',
@@ -722,6 +730,7 @@ function makeSupabaseStore(C){
     },
     async markRead(uid,id){must(await stu.rpc('mark_read',{p_id:id}))},
     watchThreads(cb){return live(stf,{table:'threads',fetch:async()=>must(await stf.from('threads').select('*').order('last_at',{ascending:false}).limit(300)).map(r=>({uid:r.student,sid:r.sid,name:r.name,lastAt:ms(r.last_at),lastText:r.last_text,lastFrom:r.last_from,staffSeenAt:ms(r.staff_seen_at)})),cb})},
+    async fetchRange(from,to){return split(must(await stf.from('bookings').select('*').gte('date',from).lte('date',to).order('date').limit(5000)))},
     async scanTicket(t,force){return must(await stf.rpc('scan_ticket',{p_id:t.id||'',p_code:t.code||'',p_date:t.date||'',p_force:!!force}))},
     async markThreadSeen(uid){try{await stf.rpc('mark_thread_seen',{p_student:uid})}catch(e){}},
   };
@@ -903,7 +912,8 @@ function stateClass(left,cap){if(left<=0) return 's-bad';if(left/cap<=0.3) retur
 /* ---------- Student ---------- */
 function Student({L,lang,store,canWrite,say,tick,me,uid,msgs,pending,onStuOut}){
   const goAccount=()=>{const el=document.getElementById('my-bookings');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})};
-  const days=useMemo(()=>{const a=[];const d=new Date();for(let i=0;i<7;i++){const x=new Date(d);x.setDate(d.getDate()+i);a.push(isoOf(x))}return a},[tick>0&&todayISO()]);
+  const days=useMemo(()=>{const a=[];const d=new Date();for(let i=0;i<=CFG.bookAhead;i++){const x=new Date(d);x.setDate(d.getDate()+i);a.push(isoOf(x))}return a},[tick>0&&todayISO(),CFG.bookAhead]);
+  useEffect(()=>{if(!days.includes(date))setDate(days[0])},[days.join()]);
   const [date,setDate]=useState(days[0]);
   const [shift,setShift]=useState(()=>nowMin()>=toMin('11:30')?'e':'m');
   const firstOpen=(dt,sh)=>{const s=SLOTS.filter(x=>x.shift===sh);const f=s.find(x=>canBookSlot(dt,x))||s[0];return f?f.id:null};
@@ -989,7 +999,7 @@ function BookForm({L,lang,store,canWrite,me,uid,date,slot,section,onClose,onBook
     const data={code:makeCode(date),studentName:me.name,studentId:me.sid,uid,section:section.id,slotId:slot.id,date,status:'booked',createdAt:Date.now()};
     try{
       const r=await store.claim(id,data);
-      if(!r.ok){setBusy(false);if(r.reason==='dup')setDup(true);if(r.reason==='restricted')store.reloadStudent();return setErr({dup:L.errDup,full:L.errFull,slot_closed:L.errClosed,closed_day:L.errClosedDay,restricted:L.errRestricted}[r.reason]||L.errGeneric)}
+      if(!r.ok){setBusy(false);if(r.reason==='dup')setDup(true);if(r.reason==='restricted')store.reloadStudent();return setErr({dup:L.errDup,full:L.errFull,slot_closed:L.errClosed,closed_day:L.errClosedDay,restricted:L.errRestricted,too_far:L.errTooFar}[r.reason]||L.errGeneric)}
       onBooked(r.id||id,r.row||data);
     }catch(ex){setBusy(false);setErr(ex&&ex.code==='invalid_argument'?L.errPerm:L.errGeneric)}
   }
@@ -1452,7 +1462,9 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
   const uidKey=[...new Set(Object.values(b).filter(x=>x.uid).map(x=>x.uid))].sort().join(',');
   useEffect(()=>{if(!uidKey){setVmap({});return}let ok=true;store.verifiedMap(uidKey.split(',')).then(m=>{if(ok)setVmap(m)}).catch(()=>{});return()=>{ok=false}},[store,uidKey]);
   async function verify(r){try{await store.verifyStudent(r.uid,true);setVmap(m=>({...m,[r.uid]:true}));say(L.verifiedToast)}catch(e){say(L.errGeneric)}}
-  const [allDay,setAllDay]=useState(false);
+  const [view,setView]=useState('hour'); // hour | m | e | day
+  const allDay=view!=='hour';
+  const inView=r=>view==='day'?true:view==='hour'?r.slotId===slotId:slotById(r.slotId).shift===view;
   const closed=closedInfo(date);
   const per=counts(b,d,date,slotId);
   const perSlot=id=>Object.entries(b).filter(([k,x])=>!x._syn&&x.slotId===id&&occupies(effStatus(x,d[k]))).length;
@@ -1464,7 +1476,7 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
 
   const qq=q.trim().toLowerCase();
   const rows=Object.entries(b).filter(([id,x])=>!x._syn).map(([id,x])=>({id,...x,st:effStatus(x,d[id])}))
-    .filter(r=>qq?((r.studentName||'').toLowerCase().includes(qq)||(r.studentId||'').includes(qq)||(r.code||'').toLowerCase().includes(qq)):(allDay||r.slotId===slotId))
+    .filter(r=>qq?((r.studentName||'').toLowerCase().includes(qq)||(r.studentId||'').includes(qq)||(r.code||'').toLowerCase().includes(qq)):inView(r))
     .filter(r=>sec==='all'||r.section===sec)
     .sort((a,b2)=>toMin(slotById(a.slotId).s)-toMin(slotById(b2.slotId).s)||order(a.st)-order(b2.st)||(a.studentName||'').localeCompare(b2.studentName||''));
   function order(s){return{booked:0,'checked-in':1,'no-show':2,cancelled:3}[s]??4}
@@ -1485,7 +1497,7 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
       <div className="row" style=${{gap:'8px'}}><span className="hint">${longDate(date,lang)}</span><input id="dk-date" type="date" dir="ltr" className="search" style=${{width:'auto',padding:'6px 10px'}} value=${date} onChange=${e=>e.target.value&&setDate(e.target.value)} aria-label=${L.date}/></div>
     </div>
     <div className="chips">${dates.map((dt,i)=>html`<button key=${dt} className="chip" aria-pressed=${dt===date} onClick=${()=>setDate(dt)}><span className="d1">${i===1?L.today:i===2?L.tomorrow:dayLabel(dt,lang)}</span><span className="d2 num">${Number(dt.slice(8))}</span></button>`)}</div>
-    <div className="chips">${SLOTS.map(s=>{const live=isToday&&n>=toMin(s.s)&&n<toMin(s.e);return html`<button key=${s.id} className="chip num" aria-pressed=${s.id===slotId} onClick=${()=>{setSlotId(s.id);setQ('');setAllDay(false)}}><span className="d1">${live?'● '+L.now:(s.shift==='m'?L.morning:L.evening).split(' ').slice(-1)[0]}${ready&&perSlot(s.id)>0?html` · <b>${perSlot(s.id)}</b>`:''}</span><span className="d2" style=${{fontSize:'14px'}}>${slotLabel(s,L)}</span></button>`})}</div>
+    <div className="chips">${SLOTS.map(s=>{const live=isToday&&n>=toMin(s.s)&&n<toMin(s.e);return html`<button key=${s.id} className="chip num" aria-pressed=${s.id===slotId} onClick=${()=>{setSlotId(s.id);setQ('');setView('hour')}}><span className="d1">${live?'● '+L.now:(s.shift==='m'?L.morning:L.evening).split(' ').slice(-1)[0]}${ready&&perSlot(s.id)>0?html` · <b>${perSlot(s.id)}</b>`:''}</span><span className="d2" style=${{fontSize:'14px'}}>${slotLabel(s,L)}</span></button>`})}</div>
   </section>
 
   ${closed&&html`<div className="banner"><b>${L.closedB}</b><span>${closed.reason||L.closedWeekly}${Object.values(b).some(x=>x.status!=='cancelled')?' — '+L.bookingsWarn:''}</span></div>`}
@@ -1502,9 +1514,9 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
   </section>
 
   <section className="panel" style=${{display:'grid',gap:'12px'}}>
-    <div className="row" style=${{justifyContent:'space-between'}}><div className="row" style=${{gap:'10px'}}><h2 style=${{margin:0}}>${qq?L.search.split(' ')[0]:allDay?L.wholeDay:L.roster} <span className="hint num">(${rows.length})</span></h2>${!qq&&html`<div className="seg"><button aria-pressed=${!allDay} onClick=${()=>setAllDay(false)}>${L.thisHour}</button><button aria-pressed=${allDay} onClick=${()=>setAllDay(true)}>${L.wholeDay}</button></div>`}</div><div className="row" style=${{gap:'8px'}}>${(()=>{const t=rows.filter(r=>r.uid&&r.st!=='cancelled');return !qq&&t.length>0&&html`<button className="btn" onClick=${()=>setMsgTo(t.map(r=>({uid:r.uid,name:r.studentName,sid:r.studentId,code:r.code})))}>${allDay?L.msgAllDay:L.msgAll}</button>`})()}<button className="btn pri" onClick=${()=>setExp(true)}>${L.exportBtn}</button></div></div>
+    <div className="row" style=${{justifyContent:'space-between'}}><div className="row" style=${{gap:'10px'}}><h2 style=${{margin:0}}>${qq?L.search.split(' ')[0]:{hour:L.roster,m:L.morning,e:L.evening,day:L.wholeDay}[view]} <span className="hint num">(${rows.length})</span></h2>${!qq&&html`<div className="seg viewSeg">${[['hour',L.thisHour],['m',L.morningS],['e',L.eveningS],['day',L.wholeDay]].filter(([k])=>k==='hour'||k==='day'||SLOTS.some(x=>x.shift===k)).map(([k,t])=>html`<button key=${k} aria-pressed=${view===k} onClick=${()=>setView(k)}>${t}</button>`)}</div>`}</div><div className="row" style=${{gap:'8px'}}>${(()=>{const t=rows.filter(r=>r.uid&&r.st!=='cancelled');return !qq&&t.length>0&&html`<button className="btn" onClick=${()=>setMsgTo(t.map(r=>({uid:r.uid,name:r.studentName,sid:r.studentId,code:r.code})))}>${{hour:L.msgAll,m:L.msgAllShift,e:L.msgAllShift,day:L.msgAllDay}[view]}</button>`})()}<button className="btn pri" onClick=${()=>setExp(true)}>${L.exportBtn}</button></div></div>
     ${msgTo&&html`<${MessageModal} L=${L} store=${store} targets=${msgTo} who=${who} say=${say} onClose=${()=>setMsgTo(null)}/>`}
-    ${exp&&html`<${ExportModal} L=${L} lang=${lang} b=${b} d=${d} date=${date} slotId=${slotId} say=${say} onClose=${()=>setExp(false)}/>`}
+    ${exp&&html`<${ExportModal} L=${L} lang=${lang} store=${store} b=${b} d=${d} date=${date} slotId=${slotId} view=${view} say=${say} onClose=${()=>setExp(false)}/>`}
     <div className="row">
       <input id="dk-search" className="search" style=${{flex:'1 1 240px'}} placeholder=${L.search} value=${q} onInput=${e=>setQ(e.target.value)}/>
       <select id="dk-sec" className="search" style=${{flex:'0 1 200px'}} value=${sec} onChange=${e=>setSec(e.target.value)}><option value="all">${L.allSections}</option>${SECTIONS.map(s=>html`<option key=${s.id} value=${s.id}>${s[lang]}</option>`)}</select>
@@ -1535,12 +1547,13 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function periodSlots(p){if(p==='all') return SLOTS;if(p==='m'||p==='e') return SLOTS.filter(s=>s.shift===p);return SLOTS.filter(s=>String(s.id)===String(p))}
 function periodLabel(p,L){if(p==='all') return L.wholeDay;if(p==='m') return L.morning;if(p==='e') return L.evening;const i=SLOTS.findIndex(s=>String(s.id)===String(p));return i<0?'':`${L.hour} ${i+1} (${slotLabel(SLOTS[i],L)})`}
-function exportRows(b,d,date,period,withCancelled){
+function exportRows(b,d,from,to,period,withCancelled){
   const ids=new Set(periodSlots(period).map(s=>s.id));
-  return Object.entries(b).map(([id,x])=>{const st=effStatus(x,d[id]);const sl=slotById(x.slotId);const badge=st==='booked'&&slotPhase(x.date,sl)==='ended'?'expired':st==='booked'?'active':st;return{id,...x,st,badge}})
-    .filter(r=>r.date===date&&ids.has(r.slotId)&&(withCancelled||r.st!=='cancelled'))
-    .sort((a,b2)=>toMin(slotById(a.slotId).s)-toMin(slotById(b2.slotId).s)||SECTIONS.findIndex(s=>s.id===a.section)-SECTIONS.findIndex(s=>s.id===b2.section)||a.studentName.localeCompare(b2.studentName));
+  return Object.entries(b).filter(([id,x])=>!x._syn).map(([id,x])=>{const st=effStatus(x,d[id]);const sl=slotById(x.slotId);const badge=st==='booked'&&slotPhase(x.date,sl)==='ended'?'expired':st==='booked'?'active':st;return{id,...x,st,badge}})
+    .filter(r=>r.date>=from&&r.date<=to&&ids.has(r.slotId)&&(withCancelled||r.st!=='cancelled'))
+    .sort((a,b2)=>(a.date<b2.date?-1:a.date>b2.date?1:0)||toMin(slotById(a.slotId).s)-toMin(slotById(b2.slotId).s)||SECTIONS.findIndex(s=>s.id===a.section)-SECTIONS.findIndex(s=>s.id===b2.section)||(a.studentName||'').localeCompare(b2.studentName||''));
 }
+function datesBetween(from,to){const out=[];const d=new Date(from+'T12:00:00'),e=new Date(to+'T12:00:00');while(d<=e&&out.length<62){out.push(isoOf(d));d.setDate(d.getDate()+1)}return out}
 async function saveFile(name,blob){
   if(window.AndroidApp&&AndroidApp.saveFile){
     const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=rej;r.readAsDataURL(blob)});
@@ -1551,11 +1564,12 @@ async function saveFile(name,blob){
   if(dl){await dl.save({filename:name,data:blob});return}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);
 }
-function buildCsv(rows,L,lang,date,period){
-  const head=[L.rptNo,L.colTicket,L.name,L.studentId,L.section,L.hour,L.colStatus];
+function buildCsv(rows,L,lang,from,to,period){
+  const range=from!==to;
+  const head=[L.rptNo,...(range?[L.rptDate]:[]),L.colTicket,L.name,L.studentId,L.section,L.hour,L.colStatus];
   const q=v=>`"${String(v).replace(/"/g,'""')}"`;
-  const meta=[[L.rptDay,dayLong(date,lang)],[L.rptDate,date],[L.rptPeriod,periodLabel(period,L)],[]];
-  const lines=meta.map(r=>r.map(q).join(',')).concat([head.map(q).join(',')],rows.map((r,i)=>[i+1,r.code,r.studentName,'\t'+r.studentId,secById(r.section)[lang],slotLabel(slotById(r.slotId),L),L['st_'+r.badge]].map(q).join(',')));
+  const meta=range?[[L.rptFrom,from],[L.rptTo,to],[L.rptPeriod,periodLabel(period,L)],[]]:[[L.rptDay,dayLong(from,lang)],[L.rptDate,from],[L.rptPeriod,periodLabel(period,L)],[]];
+  const lines=meta.map(r=>r.map(q).join(',')).concat([head.map(q).join(',')],rows.map((r,i)=>[i+1,...(range?[r.date]:[]),r.code,r.studentName,'\t'+r.studentId,secById(r.section)[lang],slotLabel(slotById(r.slotId),L),L['st_'+r.badge]].map(q).join(',')));
   return new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
 }
 function dayLong(iso,lang){return new Date(iso+'T12:00:00').toLocaleDateString(lang==='ar'?'ar-OM':'en-GB',{weekday:'long'})}
@@ -1586,26 +1600,47 @@ const RPT_CSS=`
 .rp .sig{display:inline-block;width:200px;border-bottom:1px solid #111827;height:28px;margin-inline-start:8px}
 .rp .st-checked-in{color:#2F5BEA;font-weight:600}.rp .st-no-show,.rp .st-cancelled{color:#D9344F;font-weight:600}.rp .st-active{color:#0E9F6E;font-weight:600}.rp .st-expired{color:#5B6576}
 .rp .none{color:#5B6576;text-align:center;padding:30px}
+.rp td{white-space:nowrap;height:26px;padding-top:4px;padding-bottom:4px}
+.rp td.nm{max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.rp table.lst{font-size:11.5px}.rp table.lst td,.rp table.lst th{padding-inline:6px}
 `;
-function buildReportPages(rows,{b,d,date,period,L,lang}){
-  const dir=T[lang].dir;
+function buildReportPages(rows,{from,to,period,L,lang}){
+  const dir=T[lang].dir,range=from!==to;
   const pslots=periodSlots(period);
-  const head=`<div class="hd">${CFG.logo?`<img src="${CFG.logo}">`:`<div class="mk"></div>`}<div><h1>${esc(CFG.name[lang]||CFG.name.en)}</h1><div class="sub">${esc(L.rptTitle)}</div></div></div>`;
-  const meta=`<div class="meta"><div><b>${L.rptDay}</b><span>${esc(dayLong(date,lang))}</span></div><div><b>${L.rptDate}</b><span>${esc(dateOnly(date,lang))}</span></div><div><b>${L.rptPeriod}</b><span>${esc(periodLabel(period,L))}</span></div><div><b>${L.rptGenerated}</b><span class="mono">${new Date().toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'})}</span></div></div>`;
+  const days=datesBetween(from,to),openDays=days.filter(x=>!closedInfo(x));
   const live=rows.filter(r=>r.st!=='cancelled');
   const att=live.filter(r=>r.st==='checked-in').length,ns=live.filter(r=>r.st==='no-show').length;
-  const offered=TOTAL*pslots.length;
-  const kp=`<div><h2>${L.rptSummary}</h2><div class="kpis"><div><b>${live.length}</b><span>${L.rptTotal}</span></div><div><b>${att}</b><span>${L.rptAttended}</span></div><div><b>${ns}</b><span>${L['st_no-show']}</span></div><div><b>${offered?Math.round((live.length-ns)/offered*100):0}%</b><span>${L.rptRate} · ${offered} ${L.rptSeats}</span></div></div></div>`;
-  const zt=`<div><h2>${L.rptByZone}</h2><table><thead><tr><th>${L.section}</th><th>${L.rptSeats}</th><th>${L.booked}</th><th>${L.rptAttended}</th><th>${L['st_no-show']}</th></tr></thead><tbody>${SECTIONS.map(s=>{const z=live.filter(r=>r.section===s.id);return `<tr><td>${esc(s[lang])}</td><td>${s.cap*pslots.length}</td><td>${z.length}</td><td>${z.filter(r=>r.st==='checked-in').length}</td><td>${z.filter(r=>r.st==='no-show').length}</td></tr>`}).join('')}</tbody></table></div>`;
-  const thead=`<thead><tr><th>${L.rptNo}</th><th>${L.colTicket}</th><th>${L.name}</th><th>${L.studentId}</th><th>${L.section}</th><th>${L.hour}</th><th>${L.colStatus}</th></tr></thead>`;
-  const tr=(r,i)=>`<tr><td>${i+1}</td><td class="mono">${esc(r.code)}</td><td>${esc(r.studentName)}</td><td class="mono">${esc(r.studentId)}</td><td>${esc(secById(r.section)[lang])}</td><td class="mono">${esc(slotLabel(slotById(r.slotId),L))}</td><td class="st-${r.badge}">${esc(L['st_'+r.badge])}</td></tr>`;
-  const firstCap=Math.max(4,13-SECTIONS.length), nextCap=31;
-  const chunks=[];let i=0;chunks.push(rows.slice(0,firstCap));i=firstCap;while(i<rows.length){chunks.push(rows.slice(i,i+nextCap));i+=nextCap}
-  const n=chunks.length;let idx=0;
-  return chunks.map((ch,p)=>{
-    const list=ch.length?`<table>${thead}<tbody>${ch.map(r=>tr(r,idx++)).join('')}</tbody></table>`:(p===0?`<div class="none">${L.rptNone}</div>`:'');
+  const offered=TOTAL*pslots.length*openDays.length;
+  const head=`<div class="hd">${CFG.logo?`<img src="${CFG.logo}">`:`<div class="mk"></div>`}<div><h1>${esc(CFG.name[lang]||CFG.name.en)}</h1><div class="sub">${esc(L.rptTitle)}</div></div></div>`;
+  const meta=range
+    ?`<div class="meta"><div><b>${L.rptFrom}</b><span>${esc(dayLong(from,lang))} ${esc(dateOnly(from,lang))}</span></div><div><b>${L.rptTo}</b><span>${esc(dayLong(to,lang))} ${esc(dateOnly(to,lang))}</span></div><div><b>${L.rptPeriod}</b><span>${esc(periodLabel(period,L))}</span></div><div><b>${L.rptGenerated}</b><span class="mono">${new Date().toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'})}</span></div></div>`
+    :`<div class="meta"><div><b>${L.rptDay}</b><span>${esc(dayLong(from,lang))}</span></div><div><b>${L.rptDate}</b><span>${esc(dateOnly(from,lang))}</span></div><div><b>${L.rptPeriod}</b><span>${esc(periodLabel(period,L))}</span></div><div><b>${L.rptGenerated}</b><span class="mono">${new Date().toLocaleString('en-GB',{dateStyle:'short',timeStyle:'short'})}</span></div></div>`;
+  const kp=`<div><h2>${L.rptSummary}${range?` · ${days.length} ${L.rptDays}`:''}</h2><div class="kpis"><div><b>${live.length}</b><span>${L.rptTotal}</span></div><div><b>${att}</b><span>${L.rptAttended}</span></div><div><b>${ns}</b><span>${L['st_no-show']}</span></div><div><b>${offered?Math.round((live.length-ns)/offered*100):0}%</b><span>${L.rptRate} · ${offered} ${L.rptSeats}</span></div></div></div>`;
+  const tables=[];
+  if(range) tables.push({title:L.rptByDay,thead:`<tr><th>${L.rptDate}</th><th>${L.rptDay}</th><th>${L.rptTotal}</th><th>${L.rptAttended}</th><th>${L['st_no-show']}</th><th>${L.rptRate}</th></tr>`,
+    rows:days.map(x=>{const z=live.filter(r=>r.date===x);const c=closedInfo(x);const off=c?0:TOTAL*pslots.length;const zn=z.filter(r=>r.st==='no-show').length;
+      return `<tr><td class="mono">${x}</td><td>${esc(dayLong(x,lang))}${c?` <span class="st-cancelled">(${esc(L.closedB)})</span>`:''}</td><td>${z.length}</td><td>${z.filter(r=>r.st==='checked-in').length}</td><td>${zn}</td><td>${off?Math.round((z.length-zn)/off*100)+'%':'—'}</td></tr>`})});
+  tables.push({title:L.rptByZone,thead:`<tr><th>${L.section}</th><th>${L.rptSeats}</th><th>${L.booked}</th><th>${L.rptAttended}</th><th>${L['st_no-show']}</th></tr>`,
+    rows:SECTIONS.map(s=>{const z=live.filter(r=>r.section===s.id);return `<tr><td>${esc(s[lang])}</td><td>${s.cap*pslots.length*openDays.length}</td><td>${z.length}</td><td>${z.filter(r=>r.st==='checked-in').length}</td><td>${z.filter(r=>r.st==='no-show').length}</td></tr>`})});
+  tables.push({title:L.rptList,thead:`<tr><th>${L.rptNo}</th>${range?`<th>${L.rptDate}</th>`:''}<th>${L.colTicket}</th><th>${L.name}</th><th>${L.studentId}</th><th>${L.section}</th><th>${L.hour}</th><th>${L.colStatus}</th></tr>`,
+    cls:'lst',rows:rows.map((r,i)=>`<tr><td>${i+1}</td>${range?`<td class="mono">${r.date.slice(5)}</td>`:''}<td class="mono">${esc(r.code)}</td><td class="nm">${esc(r.studentName)}</td><td class="mono">${esc(r.studentId)}</td><td>${esc(secById(r.section)[lang])}</td><td class="mono">${esc(slotLabel(slotById(r.slotId),L))}</td><td class="st-${r.badge}">${esc(L['st_'+r.badge])}</td></tr>`),
+    empty:`<div class="none">${L.rptNone}</div>`});
+  // pack the tables onto A4 pages (capacity counted in table rows)
+  const FIRST=24,NEXT=32;const pages=[[]];let room=FIRST;
+  for(const t of tables){
+    if(!t.rows.length){if(room<3){pages.push([]);room=NEXT}pages[pages.length-1].push(`<div><h2>${t.title}</h2>${t.empty||''}</div>`);room-=3;continue}
+    let i=0,first=true;
+    while(i<t.rows.length){
+      if(room<4){pages.push([]);room=NEXT}
+      const k=Math.min(t.rows.length-i,room-2);
+      pages[pages.length-1].push(`<div><h2>${t.title}${first?'':` (${L.rptCont})`}</h2><table class="${t.cls||''}"><thead>${t.thead}</thead><tbody>${t.rows.slice(i,i+k).join('')}</tbody></table></div>`);
+      room-=k+2;i+=k;first=false;
+    }
+  }
+  const n=pages.length;const sub=`<div class="sub">${esc(CFG.name[lang]||'')} · ${range?`${esc(from)} → ${esc(to)}`:esc(dateOnly(from,lang))} · ${esc(periodLabel(period,L))}</div>`;
+  return pages.map((blocks,p)=>{
     const foot=`<div class="ft"><span>${p===n-1?`${L.rptSign}<span class="sig"></span>`:''}</span><span>${L.rptPage} ${p+1} / ${n}</span></div>`;
-    return `<div class="rp" dir="${dir}" lang="${lang}">${p===0?head+meta+kp+zt+`<h2 style="margin-bottom:-8px">${L.rptList}</h2>`:`<div class="sub">${esc(CFG.name[lang]||'')} · ${esc(dateOnly(date,lang))} · ${esc(periodLabel(period,L))}</div>`}${list}${foot}</div>`;
+    return `<div class="rp" dir="${dir}" lang="${lang}">${p===0?head+meta+kp:sub}${blocks.join('')}${foot}</div>`;
   });
 }
 async function buildPdf(pages){
@@ -1626,22 +1661,42 @@ async function buildPdf(pages){
   }finally{host.remove()}
 }
 
-function ExportModal({L,lang,b,d,date,slotId,onClose,say}){
-  const [period,setPeriod]=useState('all');const [withC,setWithC]=useState(false);const [busy,setBusy]=useState('');const [err,setErr]=useState('');
-  const rows=exportRows(b,d,date,period,withC);
-  const base=`${date}_${period==='all'?'day':period==='m'?'morning':period==='e'?'evening':'hour'+(SLOTS.findIndex(s=>String(s.id)===String(period))+1)}`;
+function ExportModal({L,lang,store,b,d,date,slotId,view,onClose,say}){
+  const [period,setPeriod]=useState(()=>view==='m'||view==='e'?view:view==='hour'?String(slotId):'all');
+  const [mode,setMode]=useState('one');const [withC,setWithC]=useState(false);const [busy,setBusy]=useState('');const [err,setErr]=useState('');
+  const plus=k=>{const x=new Date(date+'T12:00:00');x.setDate(x.getDate()+k);return isoOf(x)};
+  const [from,setFrom]=useState(date);const [to,setTo]=useState(()=>plus(Math.max(1,CFG.bookAhead)));
+  const [rb,setRb]=useState(null);const [rd,setRd]=useState({});const [loading,setLoading]=useState(false);
+  const f=mode==='one'?date:from,t=mode==='one'?date:to;
+  const badRange=mode==='range'&&(!from||!to||to<from||datesBetween(from,to).length>62);
+  useEffect(()=>{if(mode!=='range'||badRange){setRb(null);return}let ok=true;setLoading(true);
+    store.fetchRange(from,to).then(v=>{if(ok){setRb(v.b);setRd(v.d)}}).catch(()=>{if(ok)setErr(L.exportFail)}).finally(()=>{if(ok)setLoading(false)});return()=>{ok=false}},[mode,from,to]);
+  const rows=mode==='one'?exportRows(b,d,f,t,period,withC):rb?exportRows(rb,rd,f,t,period,withC):[];
+  const pname=period==='all'?'day':period==='m'?'morning':period==='e'?'evening':'hour'+(SLOTS.findIndex(s=>String(s.id)===String(period))+1);
+  const base=mode==='one'?`${f}_${pname}`:`${f}_to_${t}_${pname}`;
+  const quick=[[0,L.today],[1,L.tomorrow],[Math.max(2,CFG.bookAhead),L.windowDays.replace('{n}',Math.max(2,CFG.bookAhead)+1)]];
   async function run(kind){
     setErr('');setBusy(kind);
     try{
-      if(kind==='csv'){await saveFile(`bookings_${base}.csv`,buildCsv(rows,L,lang,date,period))}
-      else{const blob=await buildPdf(buildReportPages(rows,{b,d,date,period,L,lang}));await saveFile(`bookings_${base}.pdf`,blob)}
+      if(kind==='csv'){await saveFile(`bookings_${base}.csv`,buildCsv(rows,L,lang,f,t,period))}
+      else{const blob=await buildPdf(buildReportPages(rows,{from:f,to:t,period,L,lang}));await saveFile(`bookings_${base}.pdf`,blob)}
       say(L.exported);onClose();
     }catch(e){setErr(e&&e.code==='declined'?L.exportDeclined:L.exportFail);console.warn(e)}
     setBusy('');
   }
   return html`<${Modal} onClose=${onClose}>
     <div className="mh"><h2>${L.exportTitle}</h2><button className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
-    <div className="recap"><span className="tag">${dayLong(date,lang)}</span><span className="tag">${dateOnly(date,lang)}</span></div>
+    <div className="seg" role="group" style=${{alignSelf:'start'}}>
+      <button aria-pressed=${mode==='one'} onClick=${()=>setMode('one')}>${L.oneDay}</button>
+      <button aria-pressed=${mode==='range'} onClick=${()=>setMode('range')}>${L.dateRange}</button>
+    </div>
+    ${mode==='one'?html`<div className="recap"><span className="tag">${dayLong(date,lang)}</span><span className="tag">${dateOnly(date,lang)}</span></div>`:html`
+      <div className="two">
+        <div className="field"><label htmlFor="ex-from">${L.rptFrom}</label><input id="ex-from" type="date" dir="ltr" className="search" value=${from} onInput=${e=>setFrom(e.target.value)}/></div>
+        <div className="field"><label htmlFor="ex-to">${L.rptTo}</label><input id="ex-to" type="date" dir="ltr" className="search" value=${to} min=${from} onInput=${e=>setTo(e.target.value)}/></div>
+      </div>
+      <div className="row" style=${{gap:'6px'}}>${quick.map(([k,lbl])=>html`<button key=${k} type="button" className="btn" onClick=${()=>{const s0=isoOf(new Date());const x=new Date(s0+'T12:00:00');x.setDate(x.getDate()+k);setFrom(s0);setTo(isoOf(x))}}>${lbl}</button>`)}</div>
+      ${badRange&&html`<div className="err">${L.badRange}</div>`}`}
     <div className="field"><label htmlFor="ex-period">${L.period}</label>
       <select id="ex-period" className="search" value=${period} onChange=${e=>setPeriod(e.target.value)}>
         <option value="all">${L.wholeDay}</option>
@@ -1651,11 +1706,11 @@ function ExportModal({L,lang,b,d,date,slotId,onClose,say}){
       </select>
     </div>
     <label className="row" style=${{gap:'8px',fontSize:'14px'}}><input id="ex-c" type="checkbox" checked=${withC} onChange=${e=>setWithC(e.target.checked)}/>${L.includeCancelled}</label>
-    <p className="hint num" style=${{margin:0}}>${rows.length} ${L.exportCount}</p>
+    <p className="hint num" style=${{margin:0}}>${loading?'…':`${rows.length} ${L.exportCount}`}</p>
     ${err&&html`<div className="err">${err}</div>`}
     <div className="row" style=${{justifyContent:'flex-end'}}>
-      <button className="btn" disabled=${!!busy} onClick=${()=>run('csv')}>${busy==='csv'?L.exporting:L.csv}</button>
-      <button className="btn pri" disabled=${!!busy} onClick=${()=>run('pdf')}>${busy==='pdf'?L.exporting:L.pdf}</button>
+      <button className="btn" disabled=${!!busy||loading||badRange} onClick=${()=>run('csv')}>${busy==='csv'?L.exporting:L.csv}</button>
+      <button className="btn pri" disabled=${!!busy||loading||badRange} onClick=${()=>run('pdf')}>${busy==='pdf'?L.exporting:L.pdf}</button>
     </div>
   </${Modal}>`;
 }
@@ -1976,6 +2031,7 @@ function validate(c,L){
   const so=c.slots.slice().sort((a,b)=>toMin(a.s)-toMin(b.s));
   for(let i=1;i<so.length;i++) if(toMin(so[i].s)<toMin(so[i-1].e)) return `${L.vOverlap} ${so[i-1].s}–${so[i-1].e} / ${so[i].s}–${so[i].e}`;
   for(const x of c.closed) if(!/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')) return L.vDate;
+  if(c.bookAhead===''||!(+c.bookAhead>=0&&+c.bookAhead<=30)) return L.vAhead;
   return '';
 }
 
@@ -1992,6 +2048,7 @@ function Settings({L,lang,store,say,cfg,staff,who}){
     const c=clone(draft);c.sections.forEach(s=>{s.cap=+s.cap;s.ar=s.ar.trim();s.en=s.en.trim()});c.name.ar=c.name.ar.trim();c.name.en=c.name.en.trim();
     c.slots.sort((a,b)=>toMin(a.s)-toMin(b.s));c.closed=c.closed.filter(x=>x.date).sort((a,b)=>a.date<b.date?-1:1);
     const v=validate(c,L);if(v){setErr(v);return}
+    c.bookAhead=+c.bookAhead;
     setErr('');setBusy(true);
     try{await store.saveConfig(c);setDraft(clone(c));say(L.savedSettings)}catch(x){setErr(x&&x.code==='invalid_argument'?L.deskOnly:L.errGeneric)}
     setBusy(false);
@@ -2041,6 +2098,18 @@ function Settings({L,lang,store,say,cfg,staff,who}){
       <button type="button" className="btn bad rm" onClick=${()=>up(d=>{d.slots.splice(i,1)})}>${L.remove}</button>
     </div>`)}</div>
     <div><button className="btn" onClick=${()=>up(d=>{const last=d.slots[d.slots.length-1];const st=last?last.e:'08:00';const em=Math.min(toMin(st)+60,23*60+59);d.slots.push({id:newSlotId(),shift:toMin(st)<720?'m':'e',s:st,e:`${pad(Math.floor(em/60))}:${pad(em%60)}`})})}>+ ${L.addHour}</button></div>
+  </section>
+
+  <section className="panel sgrid">
+    <h2>${L.windowT}</h2>
+    <p className="hint" style=${{margin:0}}>${L.windowHint}</p>
+    <div className="roles">${[[0,L.win0],[1,L.win1],[2,L.win2]].map(([k,t])=>html`<button key=${k} type="button" className="pz" aria-pressed=${+draft.bookAhead===k} onClick=${()=>up(d=>{d.bookAhead=k})}><span><b>${t}</b></span></button>`)}
+      <div className=${'pz'+(+draft.bookAhead>2?' on':'')} aria-pressed=${+draft.bookAhead>2} style=${{alignItems:'center'}}>
+        <label htmlFor="st-ahead"><b>${L.winN}</b></label>
+        <input id="st-ahead" type="number" min="0" max="30" inputMode="numeric" className="search num" style=${{width:'80px',padding:'6px 8px'}} value=${draft.bookAhead} onInput=${e=>{const v=e.target.value;up(d=>{d.bookAhead=v===''?'':Math.max(0,Math.min(30,parseInt(v,10)||0))})}}/>
+      </div>
+    </div>
+    <p className="hint num" style=${{margin:0}}>${L.winPreview.replace('{n}',(+draft.bookAhead||0)+1)}</p>
   </section>
 
   <section className="panel sgrid">
