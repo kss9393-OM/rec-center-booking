@@ -262,6 +262,12 @@ details summary{list-style-position:inside}
 .mgSec h3{font-size:15px;display:flex;align-items:center;gap:8px}
 .dangerSec h3{color:var(--bad)}
 .warnBox{border-color:var(--warn)}
+.delW{display:grid;gap:6px;flex:1 1 100%}
+.wDel{opacity:.8}
+.clsBox{display:grid;gap:8px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.clsBox .search{background:var(--surface)}
+.wkrow{grid-template-columns:90px minmax(0,1fr)!important}
+.zone.zoneOff{opacity:.75}.zone.zoneOff .sub{color:var(--bad);font-weight:600}
 .iosSteps{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:st}
 .iosSteps li{display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
 .iosSteps .ic{flex:none;min-width:40px;height:40px;padding:0 8px;border-radius:10px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);color:var(--accent)}
@@ -313,7 +319,7 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=13"></script>
+<script src="config.js?v=14"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -340,6 +346,9 @@ const DEFAULT_CFG={
   weeklyOff:[],          // 0=Sun … 6=Sat
   bookAhead:6,           // days ahead students may book (0 = today only)
   closed:[],             // [{date:'YYYY-MM-DD', reason:'…'}]
+  weeklyOffReasons:{},   // {"5":"عطلة نهاية الأسبوع"}
+  closedSlots:[],        // [{date, slots:[ids], reason}]  hours/shift closed on a date
+  zoneClosures:[],       // [{section, from, to:'' = until reopened, reason}]
 };
 // Live config (replaced whenever the shared settings change)
 let CFG=DEFAULT_CFG, SECTIONS=CFG.sections, SLOTS=CFG.slots, TOTAL=0;
@@ -349,6 +358,9 @@ function normCfg(c){
   out.sections=Array.isArray(c.sections)&&c.sections.length?c.sections:DEFAULT_CFG.sections;
   out.slots=(Array.isArray(c.slots)&&c.slots.length?c.slots:DEFAULT_CFG.slots).slice().sort((a,b)=>toMin(a.s)-toMin(b.s));
   out.weeklyOff=Array.isArray(c.weeklyOff)?c.weeklyOff:[];
+  out.weeklyOffReasons=c.weeklyOffReasons&&typeof c.weeklyOffReasons==='object'&&!Array.isArray(c.weeklyOffReasons)?c.weeklyOffReasons:{};
+  out.closedSlots=Array.isArray(c.closedSlots)?c.closedSlots:[];
+  out.zoneClosures=Array.isArray(c.zoneClosures)?c.zoneClosures:[];
   out.closed=Array.isArray(c.closed)?c.closed:[];
   {const n=parseInt(c.bookAhead,10);out.bookAhead=Number.isFinite(n)?Math.max(0,Math.min(30,n)):DEFAULT_CFG.bookAhead}
   return out;
@@ -356,7 +368,7 @@ function normCfg(c){
 function applyCfg(c){CFG=normCfg(c);SECTIONS=CFG.sections;SLOTS=CFG.slots;TOTAL=SECTIONS.reduce((a,s)=>a+(+s.cap||0),0);return CFG}
 function closedInfo(iso){
   const hit=CFG.closed.find(x=>x.date===iso);if(hit) return {reason:hit.reason||''};
-  const wd=new Date(iso+'T12:00:00').getDay();if(CFG.weeklyOff.includes(wd)) return {reason:'',weekly:true};
+  const wd=new Date(iso+'T12:00:00').getDay();if(CFG.weeklyOff.includes(wd)) return {reason:(CFG.weeklyOffReasons||{})[wd]||'',weekly:true};
   return null;
 }
 const LATE_MIN=10;
@@ -379,7 +391,9 @@ function slotPhase(date,slot,tick){
   if(n>=s) return n>=s+LATE_MIN?'closing':'live';
   return 'future';
 }
-const canBookSlot=(date,slot)=>{if(slot.gone||closedInfo(date)) return false;const p=slotPhase(date,slot);return p==='future'||p==='live'};
+function slotClosure(date,slotId){return (CFG.closedSlots||[]).find(c=>c.date===date&&(c.slots||[]).map(Number).includes(+slotId))||null}
+function zoneClosure(date,secId){return (CFG.zoneClosures||[]).find(z=>z.section===secId&&(z.from||'')<=date&&(!z.to||z.to>=date))||null}
+const canBookSlot=(date,slot)=>{if(slot.gone||closedInfo(date)||slotClosure(date,slot.id)) return false;const p=slotPhase(date,slot);return p==='future'||p==='live'};
 
 function effStatus(b,desk){
   if(!b) return null;
@@ -450,6 +464,12 @@ const T={
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
   windowT:'فترة الحجز المتاحة للطلاب',windowHint:'حدّد إلى أي يوم يستطيع الطلاب الحجز مقدماً. يُطبَّق على الخادم فوراً.',win0:'اليوم فقط',win1:'اليوم وغداً',win2:'حتى بعد غد',winN:'عدد الأيام القادمة:',winPreview:'يرى الطلاب {n} يوم/أيام للحجز (بما فيها اليوم).',vAhead:'عدد الأيام القادمة من 0 إلى 30.',errTooFar:'لا يمكن الحجز لهذا اليوم بعد؛ الحجز متاح لأيام محددة مقدماً.',
   msgAllShift:'رسالة لكل طلاب هذه الفترة',oneDay:'يوم واحد',dateRange:'عدة أيام',rptFrom:'من',rptTo:'إلى',rptDays:'أيام',rptByDay:'حسب اليوم',rptCont:'تابع',windowDays:'{n} أيام',badRange:'اختر تاريخ بداية ونهاية صحيحين (حتى 62 يوماً).',
+  weeklyReasonPh:'سبب الإجازة، مثل: عطلة نهاية الأسبوع',closedHoursT:'إغلاق ساعات أو فترة في يوم محدد',closedHoursHint:'اختر اليوم ثم الفترة أو الساعات المغلقة، واكتب السبب. يبقى باقي اليوم متاحاً.',noClosedHours:'لا توجد ساعات مغلقة.',closedHoursPh:'السبب، مثل: فعالية في المركز',addClosedHours:'إغلاق ساعات',
+  closedZonesT:'إغلاق قسم',closedZonesHint:'يُغلق القسم وحده (مثل الصيانة) وتبقى بقية الأقسام متاحة. اترك «إلى» فارغاً ليبقى مغلقاً حتى تحذف الإغلاق.',noClosedZones:'لا توجد أقسام مغلقة.',closedZonePh:'السبب، مثل: صيانة الطاولات',addClosedZone:'إغلاق قسم',untilReopen:'اختياري',
+  vClosedHours:'اختر ساعة واحدة على الأقل لكل إغلاق ساعات.',vClosedZone:'اختر القسم المغلق.',vRange:'تاريخ «إلى» يجب أن يكون بعد تاريخ «من».',
+  closedHourT:'الساعة {h} مغلقة',closedHourHint:'اختر ساعة أخرى أو يوماً آخر.',zoneClosedT:'مغلق',untilD:'حتى {d}',zonesClosedT:'أقسام مغلقة اليوم',bookingsWarnHour:'تنبيه: توجد حجوزات في هذه الساعة المغلقة.',
+  errClosedSlot:'هذه الساعة مغلقة. اختر ساعة أخرى.',errClosedZone:'هذا القسم مغلق حالياً. اختر قسماً آخر.',
+  delWarnBtn:'حذف الإنذار',delWarnPh:'سبب حذف الإنذار (إلزامي)',delWarnConfirm:'تأكيد الحذف',warnDeleted:'تم حذف الإنذار وإبلاغ الطالب',deletedWarnings:'الإنذارات المحذوفة',deletedByOn:'حذفه {n} في {d}',
   iosT:'تثبيت التطبيق على iPhone',iosSub:'أضف النظام إلى الشاشة الرئيسية ليعمل كتطبيق',ios1:'اضغط زر المشاركة أسفل الشاشة في Safari (أو أعلاها في iPad).',ios2:'اختر «إضافة إلى الشاشة الرئيسية» (قد تحتاج للتمرير للأسفل).',ios3:'اضغط «إضافة» أعلى الشاشة. سيظهر التطبيق بشعار الكلية.',iosAdd:'إضافة',iosNote:'استخدم متصفح Safari. بعد التثبيت افتح التطبيق من أيقونته على الشاشة الرئيسية.',iosOk:'فهمت',
   scanTab:'المسح',scanReady:'جاهز — اضغط زر المسح',scanTapToStart:'اضغط هنا لتفعيل المسح',scanCount:'دخل {n}',scanWaitPh:'بانتظار مسح التذكرة…',scanTypePh:'اكتب رمز التذكرة، مثل CRC-2026-AB12',scanCheck:'تحقق',scanManual:'إدخال يدوي',scanAuto:'العودة للمسح',soundOn:'الصوت: يعمل',soundOff:'الصوت: متوقف',
   scanIdleT:'امسح تذكرة الطالب',scanIdleH:'وجّه الماسح إلى رمز QR في تذكرة الطالب. يُسجَّل الدخول تلقائياً وتظهر النتيجة هنا.',scanRecent:'آخر عمليات المسح',
@@ -536,6 +556,12 @@ const T={
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
   windowT:'Student booking window',windowHint:'Choose how far ahead students can book. Enforced by the server immediately.',win0:'Today only',win1:'Today and tomorrow',win2:'Through the day after',winN:'Days ahead:',winPreview:'Students see {n} day(s) to book, including today.',vAhead:'Days ahead must be 0 to 30.',errTooFar:'That day isn’t open for booking yet.',
   msgAllShift:'Message everyone this shift',oneDay:'One day',dateRange:'Date range',rptFrom:'From',rptTo:'To',rptDays:'days',rptByDay:'By day',rptCont:'cont.',windowDays:'{n} days',badRange:'Choose a valid start and end date (up to 62 days).',
+  weeklyReasonPh:'Reason, e.g. weekend',closedHoursT:'Close hours or a shift on a date',closedHoursHint:'Pick the date, then the shift or hours to close, and give a reason. The rest of the day stays open.',noClosedHours:'No closed hours.',closedHoursPh:'Reason, e.g. event at the center',addClosedHours:'Close hours',
+  closedZonesT:'Close a zone',closedZonesHint:'Closes one zone (e.g. maintenance); the others stay open. Leave “To” empty to keep it closed until you remove the closure.',noClosedZones:'No closed zones.',closedZonePh:'Reason, e.g. table maintenance',addClosedZone:'Close a zone',untilReopen:'optional',
+  vClosedHours:'Choose at least one hour for each hours closure.',vClosedZone:'Choose the zone to close.',vRange:'“To” must be after “From”.',
+  closedHourT:'{h} is closed',closedHourHint:'Pick another hour or day.',zoneClosedT:'Closed',untilD:'until {d}',zonesClosedT:'Zones closed today',bookingsWarnHour:'Note: this closed hour already has bookings.',
+  errClosedSlot:'This hour is closed. Pick another hour.',errClosedZone:'This zone is closed right now. Pick another zone.',
+  delWarnBtn:'Delete warning',delWarnPh:'Reason for deleting (required)',delWarnConfirm:'Confirm delete',warnDeleted:'Warning deleted and the student notified',deletedWarnings:'Deleted warnings',deletedByOn:'Deleted by {n} on {d}',
   iosT:'Install on iPhone',iosSub:'Add the system to your Home Screen to use it as an app',ios1:'Tap the Share button at the bottom of Safari (top on iPad).',ios2:'Choose “Add to Home Screen” (you may need to scroll down).',ios3:'Tap “Add” at the top. The app appears with the college logo.',iosAdd:'Add',iosNote:'Use Safari. After installing, open the app from its Home Screen icon.',iosOk:'Got it',
   scanTab:'Scan',scanReady:'Ready — press the scan button',scanTapToStart:'Tap here to start scanning',scanCount:'{n} in',scanWaitPh:'Waiting for a ticket scan…',scanTypePh:'Type the ticket code, e.g. CRC-2026-AB12',scanCheck:'Check',scanManual:'Type a code',scanAuto:'Back to scanning',soundOn:'Sound: on',soundOff:'Sound: off',
   scanIdleT:'Scan a student’s ticket',scanIdleH:'Aim the scanner at the QR code on the student’s pass. Check-in happens automatically and the result shows here.',scanRecent:'Recent scans',
@@ -725,17 +751,17 @@ function makeSupabaseStore(C){
     async accountBySid(sid){const r=must(await stf.from('students').select('id,sid,name').eq('sid',sid).maybeSingle());return r?{uid:r.id,sid:r.sid,name:r.name}:null},
     async listAccounts(){
       const rows=must(await stf.from('students').select('*').order('name'));
-      const w=must(await stf.from('warnings').select('student'));const cnt={};w.forEach(x=>{cnt[x.student]=(cnt[x.student]||0)+1});
+      const w=must(await stf.from('warnings').select('student,deleted_at'));const cnt={};w.forEach(x=>{if(!x.deleted_at)cnt[x.student]=(cnt[x.student]||0)+1});
       return rows.map(r=>({uid:r.id,...stuRow(r),warnings:cnt[r.id]||0}));
     },
-    watchWarnings(uid,cb){const c=uid===stuUid?stu:stf;return live(c,{table:'warnings',filter:`student=eq.${uid}`,fetch:async()=>must(await c.from('warnings').select('*').eq('student',uid).order('at',{ascending:false})).map(r=>({id:r.id,reason:r.reason,byName:r.by_name,at:ms(r.at)})),cb})},
+    watchWarnings(uid,cb){const c=uid===stuUid?stu:stf;return live(c,{table:'warnings',filter:`student=eq.${uid}`,fetch:async()=>must(await c.from('warnings').select('*').eq('student',uid).order('at',{ascending:false})).map(r=>({id:r.id,reason:r.reason,byName:r.by_name,at:ms(r.at),deleted:!!r.deleted_at,deletedAt:ms(r.deleted_at),deletedBy:r.deleted_by||'',deleteReason:r.delete_reason||''})),cb})},
     async adminRestrict(uid,on,until,reason){return must(await stf.rpc('admin_restrict',{p_student:uid,p_on:on,p_until:until||null,p_reason:reason||''}))},
     async adminWarn(uid,reason){return must(await stf.rpc('admin_warn',{p_student:uid,p_reason:reason}))},
-    async adminDeleteWarning(id){must(await stf.rpc('admin_delete_warning',{p_id:id}))},
+    async adminDeleteWarning(id,reason){must(await stf.rpc('admin_delete_warning',{p_id:id,p_reason:reason}))},
     reloadStudent(){return reloadStudent()},
     async verifiedMap(uids){if(!uids.length) return{};const r=must(await stf.from('students').select('id,verified').in('id',uids));const m={};r.forEach(x=>m[x.id]=!!x.verified);return m},
     async verifyStudent(uid,on){must(await stf.rpc('verify_student',{p_student:uid,p_on:on}))},
-    async getStudent(uid){const r=must(await stf.from('students').select('*').eq('id',uid).maybeSingle());if(!r) return null;const w=must(await stf.from('warnings').select('id').eq('student',uid));return{uid:r.id,...stuRow(r),warnings:w.length}},
+    async getStudent(uid){const r=must(await stf.from('students').select('*').eq('id',uid).maybeSingle());if(!r) return null;const w=must(await stf.from('warnings').select('id,deleted_at').eq('student',uid));return{uid:r.id,...stuRow(r),warnings:w.filter(x=>!x.deleted_at).length}},
 
     /* messages */
     watchMessages(uid,cb){const c=uid===stuUid?stu:stf;return live(c,{table:'messages',filter:`student=eq.${uid}`,fetch:async()=>must(await c.from('messages').select('*').eq('student',uid).order('at',{ascending:false}).limit(100)).map(msgRow),cb})},
@@ -964,7 +990,7 @@ function Student({L,lang,store,canWrite,say,tick,me,uid,msgs,pending,onStuOut}){
   const blocked=!!me&&me.restricted&&(!me.restrictedUntil||me.restrictedUntil>=todayISO());
   const open=!!slot&&canBookSlot(date,slot)&&!blocked;
   const [warns,setWarns]=useState([]);
-  useEffect(()=>{if(!me){setWarns([]);return}return store.watchWarnings(me.id,setWarns)},[store,me&&me.id]);
+  useEffect(()=>{if(!me){setWarns([]);return}return store.watchWarnings(me.id,w=>setWarns(w.filter(x=>!x.deleted)))},[store,me&&me.id]);
   const [form,setForm]=useState(null); // section id
   const [needAuth,setNeedAuth]=useState(null); // section id waiting for sign-in
   const [ticket,setTicket]=useState(null); // {id,b}
@@ -992,21 +1018,22 @@ function Student({L,lang,store,canWrite,say,tick,me,uid,msgs,pending,onStuOut}){
       </div>
       <span className="pill s-acc">${L.dailyNote}</span>
     </div>
-    ${shiftSlots.length?html`<div className="chips">${shiftSlots.map((s,i)=>{const ok=canBookSlot(date,s);return html`<button key=${s.id} className="chip num" aria-pressed=${s.id===slotId} onClick=${()=>setSlotId(s.id)} style=${{opacity:ok?1:.5}}><span className="d1">${L.hour} ${i+1}</span><span className="d2" style=${{fontSize:'14px'}}>${slotLabel(s,L)}</span></button>`})}</div>`:html`<p className="hint" style=${{margin:0}}>${L.noHoursShift}</p>`}
+    ${shiftSlots.length?html`<div className="chips">${shiftSlots.map((s,i)=>{const ok=canBookSlot(date,s);const sc=slotClosure(date,s.id);return html`<button key=${s.id} className=${'chip num'+(sc?' off':'')} aria-pressed=${s.id===slotId} onClick=${()=>setSlotId(s.id)} style=${{opacity:ok||sc?1:.5}} title=${sc?sc.reason||L.closedB:''}><span className="d1">${L.hour} ${i+1}</span><span className="d2" style=${{fontSize:'14px'}}>${slotLabel(s,L)}</span>${sc&&html`<span className="d1 offTag">${L.closedB}</span>`}</button>`})}</div>`:html`<p className="hint" style=${{margin:0}}>${L.noHoursShift}</p>`}
   </section>
 
-  ${closed?html`<section className="panel closedBox"><h2>${L.closedToday}</h2><p style=${{margin:0}}>${closed.reason||(closed.weekly?L.closedWeekly+' · '+L.wd[new Date(date+'T12:00:00').getDay()]:'')}</p></section>`:slot&&html`
+  ${closed?html`<section className="panel closedBox"><h2>${L.closedToday}</h2><p style=${{margin:0}}>${closed.reason||(closed.weekly?L.closedWeekly+' · '+L.wd[new Date(date+'T12:00:00').getDay()]:'')}</p></section>`:
+    slot&&slotClosure(date,slot.id)?html`<section className="panel closedBox"><h2>${L.closedHourT.replace('{h}',slotLabel(slot,L))}</h2>${slotClosure(date,slot.id).reason&&html`<p style=${{margin:0}}><b>${L.reason}:</b> ${slotClosure(date,slot.id).reason}</p>`}<p className="hint" style=${{margin:0}}>${L.closedHourHint}</p></section>`:slot&&html`
   <section style=${{display:'grid',gap:'12px'}}>
     <div className="row" style=${{justifyContent:'space-between'}}><h2 style=${{fontSize:'18px'}}>${L.pickZone}</h2><span className="hint num">${slotLabel(slot,L)}</span></div>
     <p className="hint" style=${{margin:0,maxWidth:'70ch'}}>${L.ruleNote}</p>
     <div className="grid">${SECTIONS.map(s=>{
-      const used=per[s.id].booked+per[s.id].in,left=Math.max(0,s.cap-used);
-      const cls=!open?'s-mut':stateClass(left,s.cap);
-      const lab=!open?L.closed:left<=0?L.full:left/s.cap<=0.3?L.limited:L.available;
-      return html`<button key=${s.id} className=${'zone '+cls} disabled=${!open||left<=0||!ready} onClick=${()=>pickZone(s.id)}>
-        <div className="hd"><div className="ic">${ICONS[s.icon]||ICONS.other}</div><div style=${{minWidth:0}}><h3>${s[lang]}</h3><div className="sub">${lang==='ar'?s.en:s.ar}</div></div></div>
-        <div className="seats" aria-hidden="true">${Array.from({length:s.cap},(_,i)=>html`<span key=${i} className=${'seat'+(i<left?' free':'')}></span>`)}</div>
-        <div className="ft"><span><span className="big num">${ready?left:'–'}</span> <span className="hint num">${L.of} ${s.cap} · ${L.seatsLeft}</span></span><span className="pill">${lab}</span></div>
+      const used=per[s.id].booked+per[s.id].in,left=Math.max(0,s.cap-used);const zc=zoneClosure(date,s.id);
+      const cls=zc?'s-bad':!open?'s-mut':stateClass(left,s.cap);
+      const lab=zc||!open?L.closed:left<=0?L.full:left/s.cap<=0.3?L.limited:L.available;
+      return html`<button key=${s.id} className=${'zone '+cls+(zc?' zoneOff':'')} disabled=${!open||!!zc||left<=0||!ready} onClick=${()=>pickZone(s.id)}>
+        <div className="hd"><div className="ic">${ICONS[s.icon]||ICONS.other}</div><div style=${{minWidth:0}}><h3>${s[lang]}</h3><div className="sub">${zc?html`${L.zoneClosedT}${zc.reason?': '+zc.reason:''}${zc.to?' · '+L.untilD.replace('{d}',dateOnly(zc.to,lang)):''}`:lang==='ar'?s.en:s.ar}</div></div></div>
+        <div className="seats" aria-hidden="true">${Array.from({length:s.cap},(_,i)=>html`<span key=${i} className=${'seat'+(!zc&&i<left?' free':'')}></span>`)}</div>
+        <div className="ft"><span>${zc?html`<span className="hint">${L.zoneClosedT}</span>`:html`<span className="big num">${ready?left:'–'}</span> <span className="hint num">${L.of} ${s.cap} · ${L.seatsLeft}</span>`}</span><span className="pill">${lab}</span></div>
       </button>`})}</div>
   </section>`}
 
@@ -1036,7 +1063,7 @@ function BookForm({L,lang,store,canWrite,me,uid,date,slot,section,onClose,onBook
     const data={code:makeCode(date),studentName:me.name,studentId:me.sid,uid,section:section.id,slotId:slot.id,date,status:'booked',createdAt:Date.now()};
     try{
       const r=await store.claim(id,data);
-      if(!r.ok){setBusy(false);if(r.reason==='dup')setDup(true);if(r.reason==='restricted')store.reloadStudent();return setErr({dup:L.errDup,full:L.errFull,slot_closed:L.errClosed,closed_day:L.errClosedDay,restricted:L.errRestricted,too_far:L.errTooFar}[r.reason]||L.errGeneric)}
+      if(!r.ok){setBusy(false);if(r.reason==='dup')setDup(true);if(r.reason==='restricted')store.reloadStudent();return setErr({dup:L.errDup,full:L.errFull,slot_closed:L.errClosed,closed_day:L.errClosedDay,restricted:L.errRestricted,too_far:L.errTooFar,closed_slot:L.errClosedSlot,closed_zone:L.errClosedZone}[r.reason]||L.errGeneric)}
       onBooked(r.id||id,r.row||data);
     }catch(ex){setBusy(false);setErr(ex&&ex.code==='invalid_argument'?L.errPerm:L.errGeneric)}
   }
@@ -1347,7 +1374,9 @@ function StudentManage({L,lang,store,say,st,onClose,onChanged}){
   });
   const lift=()=>run('lift',async()=>{await store.adminRestrict(st.uid,false,null,'');setCur(c=>({...c,restricted:false,restrictedUntil:'',restrictReason:''}));say(L.liftDone);onChanged()});
   const warn=()=>run('warn',async()=>{if(!wr.trim()) return;const n=await store.adminWarn(st.uid,wr.trim());setWr('');say(L.warnSent.replace('{n}',n));onChanged()});
-  const delWarn=id=>run('dw'+id,async()=>{await store.adminDeleteWarning(id);onChanged()});
+  const [delW,setDelW]=useState(null); // {id, reason}
+  const delWarn=()=>run('dw',async()=>{if(!delW||!delW.reason.trim()) return;await store.adminDeleteWarning(delW.id,delW.reason.trim());setDelW(null);say(L.warnDeleted);onChanged()});
+  const activeW=warns.filter(w=>!w.deleted),deletedW=warns.filter(w=>w.deleted);
   const del=()=>run('del',async()=>{const r=await store.adminOp('deleteStudent',{id:st.uid});if(!r.ok) throw r;say(L.studentDeleted);onChanged();onClose()});
   return html`<${Modal} onClose=${onClose} wide=${true}>
     <div className="mh"><div><h2>${cur.name}</h2><span className="hint mono" dir="ltr">${cur.sid}</span></div><button className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
@@ -1388,11 +1417,18 @@ function StudentManage({L,lang,store,say,st,onClose,onChanged}){
     </section>
 
     <section className="mgSec">
-      <h3>${L.warningsT} <span className="pill s-warn num">${warns.length}</span></h3>
-      ${warns.length===0?html`<p className="hint" style=${{margin:0}}>${L.noWarnings}</p>`:html`<div className="mine">${warns.map((w,i)=>html`<div key=${w.id} className="mineRow">
-        <div style=${{minWidth:0}}><b>${L.warningN.replace('{n}',warns.length-i)}</b> · <span className="hint num">${fmtStamp(w.at,lang)} · ${w.byName}</span><div style=${{overflowWrap:'anywhere'}}>${w.reason}</div></div>
-        <button className="btn ghost" disabled=${!!busy} onClick=${()=>delWarn(w.id)}>${L.remove}</button>
+      <h3>${L.warningsT} <span className="pill s-warn num">${activeW.length}</span></h3>
+      ${activeW.length===0?html`<p className="hint" style=${{margin:0}}>${L.noWarnings}</p>`:html`<div className="mine">${activeW.map((w,i)=>html`<div key=${w.id} className="mineRow" style=${{flexWrap:'wrap'}}>
+        <div style=${{minWidth:0,flex:'1 1 220px'}}><b>${L.warningN.replace('{n}',activeW.length-i)}</b> · <span className="hint num">${fmtStamp(w.at,lang)} · ${w.byName}</span><div style=${{overflowWrap:'anywhere'}}>${w.reason}</div></div>
+        ${delW&&delW.id===w.id?html`<div className="delW">
+            <input id=${'dw-'+w.id} className="search" placeholder=${L.delWarnPh} value=${delW.reason} onInput=${e=>{const v=e.target.value;setDelW(x=>({...x,reason:v}))}}/>
+            <div className="row" style=${{gap:'6px'}}><button className="btn bad" disabled=${!!busy||!delW.reason.trim()} onClick=${delWarn}>${busy==='dw'?'…':L.delWarnConfirm}</button><button className="btn" onClick=${()=>setDelW(null)}>${L.cancel}</button></div>
+          </div>`:html`<button className="btn ghost" disabled=${!!busy} onClick=${()=>setDelW({id:w.id,reason:''})}>${L.delWarnBtn}</button>`}
       </div>`)}</div>`}
+      ${deletedW.length>0&&html`<details><summary className="hint" style=${{cursor:'pointer'}}>${L.deletedWarnings} (${deletedW.length})</summary><div className="mine" style=${{marginTop:'8px'}}>${deletedW.map(w=>html`<div key=${w.id} className="mineRow wDel">
+        <div style=${{minWidth:0}}><s>${w.reason}</s> <span className="hint num">· ${fmtStamp(w.at,lang)} · ${w.byName}</span>
+          <div className="hint">${L.deletedByOn.replace('{n}',w.deletedBy).replace('{d}',fmtStamp(w.deletedAt,lang))} — <b>${L.reason}:</b> ${w.deleteReason}</div></div>
+      </div>`)}</div></details>`}
       <div className="composer"><textarea id="sm-w" className="search" rows="2" placeholder=${L.warnPh} value=${wr} onInput=${e=>setWr(e.target.value)}></textarea><button className="btn bad" disabled=${!!busy||!wr.trim()} onClick=${warn}>${busy==='warn'?'…':L.sendWarn}</button></div>
       <p className="hint" style=${{margin:0}}>${L.warnHint}</p>
     </section>
@@ -1538,6 +1574,8 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
   </section>
 
   ${closed&&html`<div className="banner"><b>${L.closedB}</b><span>${closed.reason||L.closedWeekly}${Object.values(b).some(x=>x.status!=='cancelled')?' — '+L.bookingsWarn:''}</span></div>`}
+  ${!closed&&slotClosure(date,slotId)&&html`<div className="banner"><b>${L.closedHourT.replace('{h}',slotLabel(slot,L))}</b><span>${slotClosure(date,slotId).reason||''}${Object.values(b).some(x=>!x._syn&&x.slotId===slotId&&x.status!=='cancelled')?' — '+L.bookingsWarnHour:''}</span></div>`}
+  ${!closed&&SECTIONS.filter(x=>zoneClosure(date,x.id)).length>0&&html`<div className="banner"><b>${L.zonesClosedT}</b><span>${SECTIONS.filter(x=>zoneClosure(date,x.id)).map(x=>x[lang]+(zoneClosure(date,x.id).reason?' ('+zoneClosure(date,x.id).reason+')':'')).join('، ')}</span></div>`}
   <section className="deskTop">
     <div className="panel"><h2>${L.occNow}</h2><${Gauge} used=${used} inCount=${inCount} L=${L}/></div>
     <div className="panel">
@@ -2075,6 +2113,8 @@ function validate(c,L){
   for(let i=1;i<so.length;i++) if(toMin(so[i].s)<toMin(so[i-1].e)) return `${L.vOverlap} ${so[i-1].s}–${so[i-1].e} / ${so[i].s}–${so[i].e}`;
   for(const x of c.closed) if(!/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')) return L.vDate;
   if(c.bookAhead===''||!(+c.bookAhead>=0&&+c.bookAhead<=30)) return L.vAhead;
+  for(const x of c.closedSlots||[]){if(!/^\d{4}-\d{2}-\d{2}$/.test(x.date||'')) return L.vDate;if(!(x.slots||[]).length) return L.vClosedHours}
+  for(const x of c.zoneClosures||[]){if(!x.section||!c.sections.some(z=>z.id===x.section)) return L.vClosedZone;if(!/^\d{4}-\d{2}-\d{2}$/.test(x.from||'')) return L.vDate;if(x.to&&x.to<x.from) return L.vRange}
   return '';
 }
 
@@ -2092,6 +2132,9 @@ function Settings({L,lang,store,say,cfg,staff,who}){
     c.slots.sort((a,b)=>toMin(a.s)-toMin(b.s));c.closed=c.closed.filter(x=>x.date).sort((a,b)=>a.date<b.date?-1:1);
     const v=validate(c,L);if(v){setErr(v);return}
     c.bookAhead=+c.bookAhead;
+    c.closedSlots=(c.closedSlots||[]).map(x=>({date:x.date,slots:[...new Set((x.slots||[]).map(Number))].filter(id=>c.slots.some(z=>z.id===id)),reason:(x.reason||'').trim()}));
+    c.zoneClosures=(c.zoneClosures||[]).map(x=>({section:x.section,from:x.from,to:x.to||'',reason:(x.reason||'').trim()}));
+    {const r={};(c.weeklyOff||[]).forEach(k=>{const v=((c.weeklyOffReasons||{})[k]||'').trim();if(v)r[k]=v});c.weeklyOffReasons=r}
     setErr('');setBusy(true);
     try{await store.saveConfig(c);setDraft(clone(c));say(L.savedSettings)}catch(x){setErr(x&&x.code==='invalid_argument'?L.deskOnly:L.errGeneric)}
     setBusy(false);
@@ -2159,6 +2202,10 @@ function Settings({L,lang,store,say,cfg,staff,who}){
     <h2>${L.closedDays}</h2>
     <div className="field"><label>${L.weeklyOff}</label>
       <div className="row">${L.wd.map((w,k)=>html`<button key=${k} type="button" className="chip" style=${{minWidth:'auto',padding:'7px 12px'}} aria-pressed=${draft.weeklyOff.includes(k)} onClick=${()=>up(d=>{d.weeklyOff=d.weeklyOff.includes(k)?d.weeklyOff.filter(x=>x!==k):[...d.weeklyOff,k]})}>${w}</button>`)}</div>
+      ${draft.weeklyOff.length>0&&html`<div className="zlist" style=${{marginTop:'8px'}}>${[...draft.weeklyOff].sort().map(k=>html`<div key=${k} className="crow wkrow">
+        <b>${L.wd[k]}</b>
+        <input id=${'wk-r-'+k} className="search" placeholder=${L.weeklyReasonPh} value=${(draft.weeklyOffReasons||{})[k]||''} onInput=${e=>{const v=e.target.value;up(d=>{d.weeklyOffReasons={...(d.weeklyOffReasons||{}),[k]:v}})}} aria-label=${L.reason}/>
+      </div>`)}</div>`}
     </div>
     <div className="field"><label>${L.specificDays}</label>
       ${draft.closed.length===0&&html`<span className="hint">${L.noClosed}</span>`}
@@ -2168,6 +2215,43 @@ function Settings({L,lang,store,say,cfg,staff,who}){
         <button type="button" className="btn bad rm" onClick=${()=>up(d=>{d.closed.splice(i,1)})}>${L.remove}</button>
       </div>`)}</div>
       <div><button className="btn" onClick=${()=>up(d=>{d.closed.push({date:todayISO(),reason:''})})}>+ ${L.addDay}</button></div>
+    </div>
+
+    <div className="field"><label>${L.closedHoursT}</label>
+      <span className="hint">${L.closedHoursHint}</span>
+      ${draft.closedSlots.length===0&&html`<span className="hint">${L.noClosedHours}</span>`}
+      <div className="zlist">${draft.closedSlots.map((x,i)=>{const has=id=>(x.slots||[]).map(Number).includes(+id);const setSl=ids=>up(d=>{d.closedSlots[i].slots=ids});
+        const shiftIds=sh=>draft.slots.filter(z=>z.shift===sh).map(z=>z.id);
+        return html`<div key=${i} className="clsBox">
+        <div className="row" style=${{gap:'8px'}}>
+          <input id=${'cs-d-'+i} type="date" dir="ltr" className="search" style=${{width:'auto'}} value=${x.date} onInput=${e=>{const v=e.target.value;up(d=>{d.closedSlots[i].date=v})}} aria-label=${L.date}/>
+          <button type="button" className="btn" onClick=${()=>setSl(shiftIds('m'))}>${L.morning}</button>
+          <button type="button" className="btn" onClick=${()=>setSl(shiftIds('e'))}>${L.evening}</button>
+          <button type="button" className="btn bad rm" style=${{marginInlineStart:'auto'}} onClick=${()=>up(d=>{d.closedSlots.splice(i,1)})}>${L.remove}</button>
+        </div>
+        <div className="chips" style=${{flexWrap:'wrap'}}>${draft.slots.map(z=>html`<button key=${z.id} type="button" className="chip num" style=${{minWidth:'auto',padding:'6px 10px'}} aria-pressed=${has(z.id)} onClick=${()=>setSl(has(z.id)?(x.slots||[]).filter(v=>+v!==+z.id):[...(x.slots||[]),z.id])}><span className="d2" style=${{fontSize:'13px'}}>${slotLabel(z,L)}</span></button>`)}</div>
+        <input id=${'cs-r-'+i} className="search" placeholder=${L.closedHoursPh} value=${x.reason||''} onInput=${e=>{const v=e.target.value;up(d=>{d.closedSlots[i].reason=v})}} aria-label=${L.reason}/>
+      </div>`})}</div>
+      <div><button className="btn" onClick=${()=>up(d=>{d.closedSlots.push({date:todayISO(),slots:[],reason:''})})}>+ ${L.addClosedHours}</button></div>
+    </div>
+
+    <div className="field"><label>${L.closedZonesT}</label>
+      <span className="hint">${L.closedZonesHint}</span>
+      ${draft.zoneClosures.length===0&&html`<span className="hint">${L.noClosedZones}</span>`}
+      <div className="zlist">${draft.zoneClosures.map((x,i)=>html`<div key=${i} className="clsBox">
+        <div className="row" style=${{gap:'8px'}}>
+          <select id=${'zc-s-'+i} className="search" style=${{flex:'1 1 160px'}} value=${x.section} onChange=${e=>{const v=e.target.value;up(d=>{d.zoneClosures[i].section=v})}} aria-label=${L.section}>
+            ${draft.sections.map(z=>html`<option key=${z.id} value=${z.id}>${z[lang]||z.ar||z.en}</option>`)}
+          </select>
+          <button type="button" className="btn bad rm" onClick=${()=>up(d=>{d.zoneClosures.splice(i,1)})}>${L.remove}</button>
+        </div>
+        <div className="two">
+          <div className="field"><label htmlFor=${'zc-f-'+i}>${L.rptFrom}</label><input id=${'zc-f-'+i} type="date" dir="ltr" className="search" value=${x.from||''} onInput=${e=>{const v=e.target.value;up(d=>{d.zoneClosures[i].from=v})}}/></div>
+          <div className="field"><label htmlFor=${'zc-t-'+i}>${L.rptTo} <span className="hint">(${L.untilReopen})</span></label><input id=${'zc-t-'+i} type="date" dir="ltr" className="search" min=${x.from||''} value=${x.to||''} onInput=${e=>{const v=e.target.value;up(d=>{d.zoneClosures[i].to=v})}}/></div>
+        </div>
+        <input id=${'zc-r-'+i} className="search" placeholder=${L.closedZonePh} value=${x.reason||''} onInput=${e=>{const v=e.target.value;up(d=>{d.zoneClosures[i].reason=v})}} aria-label=${L.reason}/>
+      </div>`)}</div>
+      <div><button className="btn" onClick=${()=>up(d=>{d.zoneClosures.push({section:(d.sections[0]||{}).id||'',from:todayISO(),to:'',reason:''})})}>+ ${L.addClosedZone}</button></div>
     </div>
   </section>
 
