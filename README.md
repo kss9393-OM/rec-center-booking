@@ -64,10 +64,15 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 4. شارك رابط الموقع مع الطلاب.
 
 ### الصلاحيات
-- **الطالب:** يرى أعداد المقاعد فقط، ويرى حجوزاته ورسائله فقط.
-- **موظف الاستقبال:** الحضور، والرسائل، والتقارير.
-- **مدير النظام:** كل ما سبق، والإعدادات، والحسابات، وإصدار كلمات مرور مؤقتة للطلاب.
-- قواعد الحجز (السعة، ساعة واحدة يومياً، أيام الإغلاق، انتهاء وقت الحجز) **يفرضها الخادم**، ولا يمكن تجاوزها من المتصفح.
+
+| الحساب | ما يستطيعه |
+|---|---|
+| موظف استقبال | المسح، الاستقبال وتسجيل الحضور، مراسلة الطلاب، التقارير، الإحصائيات، التنبيهات |
+| مدير النظام | كل ما سبق + الإعدادات (الأقسام، الساعات، الإغلاق، الإلغاء التلقائي) وحسابات الموظفين والطلاب |
+| المطوّر | كل صلاحيات المدير + تغيير اسم المركز والشعار + إرسال تنبيهات للمشرفين والمدير |
+| متابعة فقط | الإحصائيات وحركة الحجز (عرض فقط) ومراسلة المشرفين والمدير، دون أي تعديل |
+
+يُنشئ مدير النظام أول حساب مطوّر مرة واحدة من «الإعدادات ← حسابات الإدارة»، وبعدها لا يُنشئ حسابات المطوّر أو يعدّلها إلا المطوّر. الصلاحيات مفروضة في قاعدة البيانات نفسها وليست مجرد إخفاء في الواجهة.
 
 ### الإلغاء التلقائي لعدم الحضور
 
@@ -143,10 +148,15 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 4. Share the site link with students.
 
 ### Roles
-- **Student:** sees seat counts only, and only their own bookings and messages.
-- **Reception staff:** check-ins, messages and reports.
-- **System admin:** all of the above plus settings, accounts and temporary student passwords.
-- Booking rules (capacity, one hour per day, closed days, booking cut-off) are **enforced by the server** and can't be bypassed from the browser.
+
+| Account | Can do |
+|---|---|
+| Reception staff | Scanning, desk check-ins, student messages, reports, statistics, alerts |
+| System admin | All of the above + settings (zones, hours, closures, auto-cancel) and staff/student accounts |
+| Developer | Everything an admin can + center name and logo + alerts to supervisors and the admin |
+| Follow-up only | Statistics and booking activity (view only) and messages to supervisors and the admin; no changes |
+
+A system admin creates the first developer account once (Settings → management accounts); after that only a developer can create or change developer accounts. Permissions are enforced by the database itself, not just hidden in the UI.
 
 ### Automatic no-show cancellation
 

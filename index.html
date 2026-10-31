@@ -119,6 +119,7 @@ main{padding-block:20px 48px;display:grid;gap:20px}
 .s-warn{--st:var(--warn);--stsoft:var(--warn-soft)}
 .s-bad{--st:var(--bad);--stsoft:var(--bad-soft)}
 .s-acc{--st:var(--accent);--stsoft:var(--accent-soft)}
+.s-dev{--st:#7c3aed;--stsoft:rgba(124,58,237,.12)}
 .s-mut{--st:var(--muted);--stsoft:var(--surface-2)}
 
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
@@ -227,6 +228,19 @@ tr.late td{background:var(--warn-soft)}
 .trow.on{background:var(--accent-soft);border-color:var(--accent)}
 .alRow{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);flex-wrap:wrap}
 .alRow.warn{border-color:var(--bad)}
+.alRow.notice{border-color:#7c3aed;background:rgba(124,58,237,.05)}
+.icoSeg button{position:relative;display:inline-grid;place-items:center;padding:7px 14px;min-width:48px;min-height:40px}
+.icoSeg .navDot{position:absolute;top:2px;inset-inline-end:3px;margin:0;min-width:16px;height:16px;font-size:10px;padding:0 4px}
+.tabTitle{font-size:15px;margin:2px 4px 10px;color:var(--muted);font-weight:600}
+.teamBox{display:grid;gap:8px}
+.teamBox .seg{justify-self:start}
+.teamBox textarea{resize:vertical;min-height:70px;font:inherit}
+.stTiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px}
+.stTile{display:grid;gap:2px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.stTile b{font-size:24px;line-height:1.1}
+.stTile span{font-size:12.5px;color:var(--muted)}
+.stTile.ok b{color:var(--ok)}.stTile.bad b{color:var(--bad)}.stTile.acc b{color:var(--accent)}
+.lg{display:inline-block;width:10px;height:10px;border-radius:3px;vertical-align:middle}
 .alRow.read{opacity:.62}
 .alIc{font-size:20px;line-height:1.2}
 .alAct{margin-inline-start:auto}
@@ -291,7 +305,7 @@ details summary{list-style-position:inside}
 .scanInput::placeholder{font-family:var(--f-body);letter-spacing:0}
 @media (max-width:520px){
   .mgBar{gap:6px 8px;padding:8px 10px}.mgBar .hideSm{display:none}
-  .mgNav{width:100%;margin-inline-start:0!important}.mgNav .seg{flex:1;display:flex}.mgNav .seg button{flex:1;padding:8px 4px}
+  .mgNav{width:100%;margin-inline-start:0!important}.mgNav .seg{flex:1;display:flex}.mgNav .seg button{flex:1;padding:8px 4px}.icoSeg button{min-width:0;padding:7px 2px}
   .scanBar{padding:10px 12px;gap:8px}.scanOpts .btn{padding:6px 10px;font-size:13px}
   .scanRes{padding:14px;gap:10px}.scanWho .nm{font-size:21px}.scanHead h2{font-size:19px}.scanMark{width:38px;height:38px;font-size:22px}
   main{gap:12px}
@@ -326,7 +340,7 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=15"></script>
+<script src="config.js?v=16"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -473,6 +487,12 @@ const T={
   msgTab:'الرسائل',chatTitle:'المراسلة مع الإدارة',chatHint:'اكتب استفسارك وسيرد عليك أحد الموظفين هنا.',chatPh:'اكتب رسالة…',you2:'أنت',staffLbl:'الإدارة',
   convos:'المحادثات',newConvo:'محادثة جديدة',sidPh:'الرقم الجامعي',open2:'فتح',noConvos:'لا توجد محادثات بعد.',pickConvo:'اختر محادثة أو ابدأ واحدة جديدة.',
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
+  statsTab:'الإحصائيات',bookingsTab:'حركة الحجز',manageNav:'قائمة الإدارة',readOnly:'عرض فقط',
+  roleDev:'المطوّر',roleDevD:'كل صلاحيات المدير + اسم المركز والشعار + إرسال تنبيهات للمشرفين والمدير',roleViewer:'متابعة فقط',roleViewerD:'الإحصائيات وحركة الحجز ومراسلة المشرفين والمدير، دون أي تعديل',
+  devLocked:'حساب المطوّر — يديره المطوّر فقط',devOnlyAcc:'هذا الإجراء متاح للمطوّر فقط.',identityDevOnly:'اسم المركز والشعار يغيّرهما حساب المطوّر فقط.',
+  last7:'آخر 7 أيام',last30:'آخر 30 يوماً',stBookings:'الحجوزات',stRate:'نسبة الحضور',stStudents:'طلاب مختلفون',stUpcoming:'حجوزات قادمة',stByZone:'حسب القسم',stByHour:'حسب الساعة',stByDay:'حسب اليوم',stOther:'محجوز / لم يحضر',stRecent:'آخر الحجوزات',stWhen:'وقت الحجز',
+  alAuto:'تلقائية',alTeam:'رسائل الفريق',alKindNotice:'تنبيه من المطوّر',alKindTeam:'رسالة للفريق',audAll:'المشرفون والمدير',audAdmin:'المدير فقط',audAdminShort:'للمدير',
+  sendNoticeT:'إرسال تنبيه للمشرفين والمدير',sendNoteT:'إرسال رسالة للمشرفين والمدير',noticePh:'نص التنبيه…',notePh:'اكتب رسالتك…',sendBtn:'إرسال',noteSent:'تم الإرسال',
   alertsTab:'التنبيهات',alertsT:'تنبيهات المشرف',alAll:'الكل',alUnread:'غير المقروءة',alReadAll:'تعليم الكل كمقروء',alMark:'تمت القراءة',alNone:'لا توجد تنبيهات.',alKindN:'عدم حضور — إلغاء تلقائي',alKindW:'إنذار تلقائي',alReadBy:'قرأه: {n}',
   autoT:'الإلغاء التلقائي لعدم الحضور',autoOn:'مفعّل',autoOff:'متوقف',autoHint:'يعمل على الخادم كل دقيقة: إذا لم يُسجَّل حضور الطالب بعد بداية الساعة بالمدة المحددة يُلغى الحجز ويتحرر المقعد ويُبلَّغ الطالب والمشرف. عند تكرار عدم الحضور يصدر إنذار تلقائي.',autoMin:'الإلغاء بعد (دقائق)',autoWarn:'إنذار تلقائي بعد (مرات عدم حضور، 0 = بدون)',autoWin:'خلال فترة (أيام)',autoPrev:'يُلغى الحجز بعد {m} دقائق من بداية الساعة دون تسجيل حضور.',autoPrevW:'إنذار تلقائي عند {n} مرات عدم حضور خلال {d} يوماً.',autoPrevNoW:'بدون إنذار تلقائي.',autoPrevOff:'الإلغاء التلقائي متوقف؛ يسجّل الموظفون عدم الحضور يدوياً.',vAuto:'قيم الإلغاء التلقائي: الدقائق 1–120، المرات 0–20، الأيام 1–365.',
   windowT:'فترة الحجز المتاحة للطلاب',windowHint:'حدّد إلى أي يوم يستطيع الطلاب الحجز مقدماً. يُطبَّق على الخادم فوراً.',win0:'اليوم فقط',win1:'اليوم وغداً',win2:'حتى بعد غد',winN:'عدد الأيام القادمة:',winPreview:'يرى الطلاب {n} يوم/أيام للحجز (بما فيها اليوم).',vAhead:'عدد الأيام القادمة من 0 إلى 30.',errTooFar:'لا يمكن الحجز لهذا اليوم بعد؛ الحجز متاح لأيام محددة مقدماً.',
@@ -567,6 +587,12 @@ const T={
   msgTab:'Messages',chatTitle:'Messages with the center',chatHint:'Write your question and a staff member will reply here.',chatPh:'Write a message…',you2:'You',staffLbl:'Center staff',
   convos:'Conversations',newConvo:'New conversation',sidPh:'Student ID',open2:'Open',noConvos:'No conversations yet.',pickConvo:'Pick a conversation or start a new one.',
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
+  statsTab:'Statistics',bookingsTab:'Booking activity',manageNav:'Management menu',readOnly:'View only',
+  roleDev:'Developer',roleDevD:'Everything an admin has + center name and logo + alerts to supervisors and the admin',roleViewer:'Follow-up only',roleViewerD:'Statistics, booking activity and messages to supervisors and the admin; no changes',
+  devLocked:'Developer account — managed by the developer only',devOnlyAcc:'Only the developer can do this.',identityDevOnly:'Only the developer account can change the center name and logo.',
+  last7:'Last 7 days',last30:'Last 30 days',stBookings:'Bookings',stRate:'Attendance rate',stStudents:'Distinct students',stUpcoming:'Upcoming bookings',stByZone:'By zone',stByHour:'By hour',stByDay:'By day',stOther:'Booked / no-show',stRecent:'Latest bookings',stWhen:'Booked at',
+  alAuto:'Automatic',alTeam:'Team messages',alKindNotice:'Alert from the developer',alKindTeam:'Team message',audAll:'Supervisors and admin',audAdmin:'Admin only',audAdminShort:'Admin',
+  sendNoticeT:'Send an alert to supervisors and the admin',sendNoteT:'Send a message to supervisors and the admin',noticePh:'Alert text…',notePh:'Write your message…',sendBtn:'Send',noteSent:'Sent',
   alertsTab:'Alerts',alertsT:'Supervisor alerts',alAll:'All',alUnread:'Unread',alReadAll:'Mark all read',alMark:'Mark read',alNone:'No alerts.',alKindN:'No-show — cancelled automatically',alKindW:'Automatic warning',alReadBy:'Read by: {n}',
   autoT:'Automatic no-show cancellation',autoOn:'On',autoOff:'Off',autoHint:'Runs on the server every minute: if a student hasn’t checked in this long after the hour starts, the booking is cancelled, the seat is freed, and the student and supervisors are notified. Repeated no-shows trigger an automatic warning.',autoMin:'Cancel after (minutes)',autoWarn:'Auto-warning after (no-shows, 0 = never)',autoWin:'Within (days)',autoPrev:'A booking is cancelled {m} minutes after the hour starts with no check-in.',autoPrevW:'Automatic warning at {n} no-shows within {d} days.',autoPrevNoW:'No automatic warning.',autoPrevOff:'Automatic cancellation is off; staff mark no-shows by hand.',vAuto:'Auto-cancel values: minutes 1–120, no-shows 0–20, days 1–365.',
   windowT:'Student booking window',windowHint:'Choose how far ahead students can book. Enforced by the server immediately.',win0:'Today only',win1:'Today and tomorrow',win2:'Through the day after',winN:'Days ahead:',winPreview:'Students see {n} day(s) to book, including today.',vAhead:'Days ahead must be 0 to 30.',errTooFar:'That day isn’t open for booking yet.',
@@ -788,7 +814,9 @@ function makeSupabaseStore(C){
     watchThreads(cb){return live(stf,{table:'threads',fetch:async()=>must(await stf.from('threads').select('*').order('last_at',{ascending:false}).limit(300)).map(r=>({uid:r.student,sid:r.sid,name:r.name,lastAt:ms(r.last_at),lastText:r.last_text,lastFrom:r.last_from,staffSeenAt:ms(r.staff_seen_at)})),cb})},
     async fetchRange(from,to){return split(must(await stf.from('bookings').select('*').gte('date',from).lte('date',to).order('date').limit(5000)))},
     async scanTicket(t,force){return must(await stf.rpc('scan_ticket',{p_id:t.id||'',p_code:t.code||'',p_date:t.date||'',p_force:!!force}))},
-    watchAlerts(cb){return live(stf,{table:'alerts',fetch:async()=>must(await stf.from('alerts').select('*').order('at',{ascending:false}).limit(100)).map(r=>({id:r.id,kind:r.kind,uid:r.student,text:r.text,at:ms(r.at),readAt:ms(r.read_at),readBy:r.read_by})),cb})},
+    watchAlerts(cb){return live(stf,{table:'alerts',fetch:async()=>must(await stf.from('alerts').select('*').order('at',{ascending:false}).limit(150)).map(r=>({id:r.id,kind:r.kind,uid:r.student,text:r.text,at:ms(r.at),readAt:ms(r.read_at),readBy:r.read_by,fromId:r.from_id||'',fromName:r.from_name||'',fromRole:r.from_role||'',audience:r.audience||'all'})),cb})},
+    watchAlertReads(cb){return live(stf,{table:'alert_reads',fetch:async()=>must(await stf.from('alert_reads').select('alert_id').limit(1000)).map(r=>r.alert_id),cb})},
+    async sendTeamNote(text,audience){return must(await stf.rpc('send_team_note',{p_text:text,p_audience:audience}))},
     async markAlertsRead(ids){must(await stf.rpc('mark_alerts_read',{p_ids:ids&&ids.length?ids:null}))},
     async markThreadSeen(uid){try{await stf.rpc('mark_thread_seen',{p_student:uid})}catch(e){}},
   };
@@ -807,7 +835,11 @@ const SESS_KEY='crc.deskSession';
 const sess={get(){try{const s=JSON.parse(sessionStorage.getItem(SESS_KEY)||'null');return s&&s.exp>Date.now()?s:null}catch(e){return null}},
   set(v){try{sessionStorage.setItem(SESS_KEY,JSON.stringify(v))}catch(e){}},clear(){try{sessionStorage.removeItem(SESS_KEY)}catch(e){}}};
 // a session stays valid only while that account exists, is active, and its password hasn't changed
-const roleOf=u=>u&&u.role==='admin'?'admin':'staff';
+const ROLE_KEYS=['staff','admin','developer','viewer'];
+const roleOf=u=>u&&ROLE_KEYS.includes(u.role)?u.role:'staff';
+const isAdminRole=r=>r==='admin'||r==='developer';
+const roleName=(r,L)=>({staff:L.roleStaff,admin:L.roleAdmin,developer:L.roleDev,viewer:L.roleViewer}[r]||L.roleStaff);
+const ROLE_PILL={staff:'s-ok',admin:'s-acc',developer:'s-dev',viewer:'s-mut'};
 const sessionValid=(s,users)=>!!s&&users.some(u=>u.u===s.u&&u.active!==false&&u.hash.slice(0,12)===s.v);
 
 /* ---------- Icons ---------- */
@@ -1543,6 +1575,7 @@ function Gauge({used,inCount,L}){
 }
 
 function Desk({L,lang,store,say,tick,who,onSignOut}){
+  const ro=!!(who&&who.role==='viewer');
   const [date,setDate]=useState(todayISO());
   const [slotIdRaw,setSlotId]=useState(defaultDeskSlot);
   const slotId=SLOTS.some(s=>s.id===slotIdRaw)?slotIdRaw:(SLOTS[0]||{}).id;
@@ -1606,7 +1639,7 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
   </section>
 
   <section className="panel" style=${{display:'grid',gap:'12px'}}>
-    <div className="row" style=${{justifyContent:'space-between'}}><div className="row" style=${{gap:'10px'}}><h2 style=${{margin:0}}>${qq?L.search.split(' ')[0]:{hour:L.roster,m:L.morning,e:L.evening,day:L.wholeDay}[view]} <span className="hint num">(${rows.length})</span></h2>${!qq&&html`<div className="seg viewSeg">${[['hour',L.thisHour],['m',L.morningS],['e',L.eveningS],['day',L.wholeDay]].filter(([k])=>k==='hour'||k==='day'||SLOTS.some(x=>x.shift===k)).map(([k,t])=>html`<button key=${k} aria-pressed=${view===k} onClick=${()=>setView(k)}>${t}</button>`)}</div>`}</div><div className="row" style=${{gap:'8px'}}>${(()=>{const t=rows.filter(r=>r.uid&&r.st!=='cancelled');return !qq&&t.length>0&&html`<button className="btn" onClick=${()=>setMsgTo(t.map(r=>({uid:r.uid,name:r.studentName,sid:r.studentId,code:r.code})))}>${{hour:L.msgAll,m:L.msgAllShift,e:L.msgAllShift,day:L.msgAllDay}[view]}</button>`})()}<button className="btn pri" onClick=${()=>setExp(true)}>${L.exportBtn}</button></div></div>
+    <div className="row" style=${{justifyContent:'space-between'}}><div className="row" style=${{gap:'10px'}}><h2 style=${{margin:0}}>${qq?L.search.split(' ')[0]:{hour:L.roster,m:L.morning,e:L.evening,day:L.wholeDay}[view]} <span className="hint num">(${rows.length})</span></h2>${ro&&html`<span className="pill s-mut">👁 ${L.readOnly}</span>`}${!qq&&html`<div className="seg viewSeg">${[['hour',L.thisHour],['m',L.morningS],['e',L.eveningS],['day',L.wholeDay]].filter(([k])=>k==='hour'||k==='day'||SLOTS.some(x=>x.shift===k)).map(([k,t])=>html`<button key=${k} aria-pressed=${view===k} onClick=${()=>setView(k)}>${t}</button>`)}</div>`}</div><div className="row" style=${{gap:'8px'}}>${(()=>{const t=rows.filter(r=>r.uid&&r.st!=='cancelled');return !ro&&!qq&&t.length>0&&html`<button className="btn" onClick=${()=>setMsgTo(t.map(r=>({uid:r.uid,name:r.studentName,sid:r.studentId,code:r.code})))}>${{hour:L.msgAll,m:L.msgAllShift,e:L.msgAllShift,day:L.msgAllDay}[view]}</button>`})()}<button className="btn pri" onClick=${()=>setExp(true)}>${L.exportBtn}</button></div></div>
     ${msgTo&&html`<${MessageModal} L=${L} store=${store} targets=${msgTo} who=${who} say=${say} onClose=${()=>setMsgTo(null)}/>`}
     ${exp&&html`<${ExportModal} L=${L} lang=${lang} store=${store} b=${b} d=${d} date=${date} slotId=${slotId} view=${view} say=${say} onClose=${()=>setExp(false)}/>`}
     <div className="row">
@@ -1620,16 +1653,16 @@ function Desk({L,lang,store,say,tick,who,onSignOut}){
         const badge=r.st==='booked'&&slotPhase(r.date,rsl)==='ended'?'expired':r.st==='booked'?'booked':r.st;
         return html`<tr key=${r.id} className=${late?'late':''}>
           <td><span className="code" dir="ltr" style=${{fontSize:'13px'}}>${r.code}</span></td>
-          <td><div style=${{fontWeight:600}}>${r.studentName}</div><div className="hint mono num" dir="ltr" style=${{textAlign:'start'}}>${r.studentId}</div>${r.uid&&vmap[r.uid]===false&&html`<div className="row" style=${{gap:'6px',marginTop:'4px'}}><span className="pill s-warn">${L.unverified}</span><button className="btn" style=${{padding:'3px 10px',fontSize:'12.5px'}} onClick=${()=>verify(r)}>${L.verifyBtn}</button></div>`}</td>
+          <td><div style=${{fontWeight:600}}>${r.studentName}</div><div className="hint mono num" dir="ltr" style=${{textAlign:'start'}}>${r.studentId}</div>${r.uid&&vmap[r.uid]===false&&html`<div className="row" style=${{gap:'6px',marginTop:'4px'}}><span className="pill s-warn">${L.unverified}</span>${!ro&&html`<button className="btn" style=${{padding:'3px 10px',fontSize:'12.5px'}} onClick=${()=>verify(r)}>${L.verifyBtn}</button>`}</div>`}</td>
           <td>${secById(r.section)[lang]}</td>
           ${(qq||allDay)&&html`<td className="num">${slotLabel(rsl,L)}</td>`}
           <td><span className=${'pill '+BADGE_CLS[badge]}>${L['st_'+badge]}</span>${late&&html` <span className="pill s-warn">${L.late}</span>`}${d[r.id]&&d[r.id].code===r.code&&d[r.id].by&&html`<div className="hint" style=${{fontSize:'11.5px',marginTop:'3px'}}>${L.by} ${d[r.id].byName||d[r.id].by}</div>`}</td>
-          <td><div className="acts">
+          <td>${!ro&&html`<div className="acts">
             ${r.st==='booked'&&html`<button className="btn ok" onClick=${()=>act(r,'checked-in')}>${L.checkIn}</button><button className="btn bad" onClick=${()=>act(r,'no-show')}>${L.noShow}</button>`}
             ${(r.st==='checked-in'||r.st==='no-show')&&html`<button className="btn ghost" onClick=${()=>act(r,null)}>${L.undo}</button>`}
             ${r.uid&&html`<button className="btn" title=${L.sendMsg} onClick=${()=>setMsgTo([{uid:r.uid,name:r.studentName,sid:r.studentId,code:r.code}])}>${L.sendMsg}</button>`}
-            ${r.uid&&who&&who.role==='admin'&&html`<${ManageStudentBtn} L=${L} lang=${lang} store=${store} say=${say} uid=${r.uid} small=${true}/>`}
-          </div></td>
+            ${r.uid&&who&&isAdminRole(who.role)&&html`<${ManageStudentBtn} L=${L} lang=${lang} store=${store} say=${say} uid=${r.uid} small=${true}/>`}
+          </div>`}</td>
         </tr>`})}</tbody>
     </table></div>
   </section>`;
@@ -1944,74 +1977,150 @@ function Scanner({L,lang,store,say,who}){
 }
 
 /* ---------- Management (reception + settings) ---------- */
+const svgI=(d,extra)=>html`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">${d}${extra||''}</svg>`;
+const NAV_ICON={
+  scan:svgI(html`<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M7 12h10"/>`),
+  desk:svgI(html`<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5M9 10h6M9 14h6M9 18h3"/>`),
+  stats:svgI(html`<path d="M4 20h16"/><rect x="6" y="11" width="3" height="7" rx="1"/><rect x="11" y="6" width="3" height="12" rx="1"/><rect x="16" y="13" width="3" height="5" rx="1"/>`),
+  msgs:svgI(html`<path d="M20 12a7.5 7.5 0 0 1-11 6.6L4 20l1.4-4.6A7.5 7.5 0 1 1 20 12z"/><path d="M9 11h6M9 14h4"/>`),
+  alerts:svgI(html`<path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>`),
+  settings:svgI(html`<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>`),
+};
+const isTeamNote=a=>a.kind==='notice'||a.kind==='team_msg';
 function Manage({L,lang,store,say,tick,cfg,staff,who,onSignOut}){
-  const isAdmin=who.role==='admin';
-  const [sub,setSub]=useState(()=>ls.get('crc.manageTab','desk'));
-  const tab=sub==='settings'&&!isAdmin?'desk':sub;
-  const pick=t=>{setSub(t);ls.set('crc.manageTab',t)};
+  const role=roleOf(who);const isAdmin=isAdminRole(role);const viewer=role==='viewer';
+  const tabs=viewer?['stats','desk','alerts']:['scan','desk','stats','msgs','alerts',...(isAdmin?['settings']:[])];
+  const tabKey='crc.manageTab.'+role;
+  const [sub,setSub]=useState(()=>ls.get(tabKey,viewer?'stats':'desk'));
+  const tab=tabs.includes(sub)?sub:(viewer?'stats':'desk');
+  const pick=t=>{setSub(t);ls.set(tabKey,t)};
   const [threads,setThreads]=useState([]);
-  useEffect(()=>store.watchThreads(setThreads),[store]);
-  useEffect(()=>{const h=()=>{if(!window.__crcScannerOn)pick('scan')};window.addEventListener('crc-scan',h);return()=>window.removeEventListener('crc-scan',h)},[]);
+  useEffect(()=>viewer?undefined:store.watchThreads(setThreads),[store,viewer]);
+  useEffect(()=>{if(viewer) return;const h=()=>{if(!window.__crcScannerOn)pick('scan')};window.addEventListener('crc-scan',h);return()=>window.removeEventListener('crc-scan',h)},[viewer]);
   const unreadT=threads.filter(threadUnread).length;
-  const [alerts,setAlerts]=useState([]);const seenA=useRef(null);
+  const [alerts,setAlerts]=useState([]);const [myReads,setMyReads]=useState([]);const seenA=useRef(null);
   useEffect(()=>store.watchAlerts?store.watchAlerts(setAlerts):undefined,[store]);
+  useEffect(()=>store.watchAlertReads?store.watchAlertReads(setMyReads):undefined,[store]);
+  const readSet=useMemo(()=>new Set(myReads),[myReads]);
+  const isUnread=a=>isTeamNote(a)?(a.fromId!==who.id&&!readSet.has(a.id)):(!viewer&&!a.readAt);
   useEffect(()=>{const ids=alerts.map(a=>a.id);
-    if(seenA.current){const fresh=alerts.filter(a=>!a.readAt&&!seenA.current.has(a.id));
-      if(fresh.length){say((fresh[0].kind==='auto_warning'?'⚠️ ':'⏰ ')+fresh[0].text);beep('warn')}}
+    if(seenA.current){const fresh=alerts.filter(a=>isUnread(a)&&!seenA.current.has(a.id));
+      if(fresh.length){const f=fresh[0];say((f.kind==='auto_warning'?'⚠️ ':f.kind==='notice'?'📢 ':f.kind==='team_msg'?'✉️ ':'⏰ ')+(f.fromName?f.fromName+': ':'')+f.text);beep('warn')}}
     seenA.current=new Set(ids)},[alerts]);
-  const unreadA=alerts.filter(a=>!a.readAt).length;
+  const unreadA=alerts.filter(isUnread).length;
+  const label={scan:L.scanTab,desk:viewer?L.bookingsTab:L.deskTab,stats:L.statsTab,msgs:L.msgTab,alerts:L.alertsTab,settings:L.settingsTab};
+  const badge={msgs:unreadT,alerts:unreadA};
   return html`
   <div className="row signbar mgBar">
     <span className="hint hideSm">${L.signedAs}</span><b>${who.name}</b>${who.u&&html`<span className="hint mono hideSm" dir="ltr">@${who.u}</span>`}
-    <span className=${'pill '+(isAdmin?'s-acc':'s-ok')}>${isAdmin?L.roleAdmin:L.roleStaff}</span>
+    <span className=${'pill '+ROLE_PILL[role]}>${roleName(role,L)}</span>
     <div className="row mgNav" style=${{gap:'8px',marginInlineStart:'auto'}}>
-      <div className="seg" role="group">
-        <button aria-pressed=${tab==='scan'} onClick=${()=>pick('scan')}>${L.scanTab}</button>
-        <button aria-pressed=${tab==='desk'} onClick=${()=>pick('desk')}>${L.deskTab}</button>
-        <button aria-pressed=${tab==='msgs'} onClick=${()=>pick('msgs')}>${L.msgTab}${unreadT>0&&html` <span className="dot num">${unreadT}</span>`}</button>
-        <button aria-pressed=${tab==='alerts'} aria-label=${L.alertsTab} onClick=${()=>pick('alerts')}>🔔${unreadA>0?html` <span className="dot num">${unreadA}</span>`:html`<span className="hideSm"> ${L.alertsTab}</span>`}</button>
-        ${isAdmin&&html`<button aria-pressed=${tab==='settings'} onClick=${()=>pick('settings')}>${L.settingsTab}</button>`}
+      <div className="seg icoSeg" role="tablist" aria-label=${L.manageNav}>
+        ${tabs.map(t=>html`<button key=${t} role="tab" aria-selected=${tab===t} aria-pressed=${tab===t} aria-label=${label[t]+(badge[t]>0?' ('+badge[t]+')':'')} title=${label[t]} onClick=${()=>pick(t)}>${NAV_ICON[t]}${badge[t]>0&&html`<span className="dot num navDot">${badge[t]}</span>`}</button>`)}
       </div>
       ${onSignOut&&html`<button className="btn" onClick=${onSignOut}>${L.signOut}</button>`}
     </div>
   </div>
+  <h2 className="tabTitle">${label[tab]}</h2>
   ${tab==='settings'?html`<${Settings} L=${L} lang=${lang} store=${store} say=${say} cfg=${cfg} staff=${staff} who=${who}/>`:
-    tab==='alerts'?html`<${Alerts} L=${L} lang=${lang} store=${store} say=${say} who=${who} alerts=${alerts} cfg=${cfg}/>`:
+    tab==='alerts'?html`<${Alerts} L=${L} lang=${lang} store=${store} say=${say} who=${who} alerts=${alerts} isUnread=${isUnread} cfg=${cfg}/>`:
     tab==='msgs'?html`<${StaffMessages} L=${L} lang=${lang} store=${store} who=${who} threads=${threads} say=${say}/>`:
     tab==='scan'?html`<${Scanner} L=${L} lang=${lang} store=${store} say=${say} who=${who}/>`:
+    tab==='stats'?html`<${Stats} L=${L} lang=${lang} store=${store} tick=${tick}/>`:
     html`<${Desk} L=${L} lang=${lang} store=${store} say=${say} tick=${tick} cfg=${cfg} who=${who}/>`}`;
 }
 
-/* ---------- Supervisor alerts (automatic no-shows and warnings) ---------- */
-function Alerts({L,lang,store,say,who,alerts,cfg}){
-  const [only,setOnly]=useState(false);const [busy,setBusy]=useState(false);
-  const isAdmin=who&&who.role==='admin';
-  const list=only?alerts.filter(a=>!a.readAt):alerts;
-  const unread=alerts.filter(a=>!a.readAt).length;
+/* ---------- Statistics (read-only) ---------- */
+function Stats({L,lang,store,tick}){
+  const [range,setRange]=useState('7');
+  const today=todayISO();
+  const from=useMemo(()=>{const x=new Date();x.setDate(x.getDate()-(+range-1));return isoOf(x)},[range,today]);
+  const to=useMemo(()=>{const x=new Date();x.setDate(x.getDate()+(range==='1'?0:CFG.bookAhead));return isoOf(x)},[range,today]);
+  const [data,setData]=useState(null);const [err,setErr]=useState(false);
+  const load=useCallback(()=>{store.fetchRange(from,to).then(r=>{setData(r);setErr(false)}).catch(()=>setErr(true))},[store,from,to]);
+  useEffect(()=>{setData(null);load();const t=setInterval(load,60000);return()=>clearInterval(t)},[load]);
+  if(err&&!data) return html`<section className="panel"><div className="empty">${L.errGeneric}</div></section>`;
+  if(!data) return html`<section className="panel"><div className="empty">…</div></section>`;
+  const all=Object.entries(data.b).map(([id,x])=>({id,...x,st:effStatus(x,data.d[id])}));
+  const past=all.filter(r=>r.date>=from&&r.date<=today);
+  const upcoming=all.filter(r=>r.date>today||(r.date===today&&r.st==='booked'&&slotPhase(r.date,slotById(r.slotId))!=='ended')).filter(r=>r.st!=='cancelled');
+  const c=k=>past.filter(r=>r.st===k).length;
+  const active=past.filter(r=>r.st!=='cancelled');
+  const inN=c('checked-in'),noN=c('no-show'),canN=c('cancelled');
+  const decided=inN+noN;const rate=decided?Math.round(inN/decided*100):0;
+  const students=new Set(active.map(r=>r.studentId)).size;
+  const days=datesBetween(from,today);
+  const perDay=days.map(d=>({d,n:active.filter(r=>r.date===d).length,i:active.filter(r=>r.date===d&&r.st==='checked-in').length}));
+  const maxDay=Math.max(1,...perDay.map(x=>x.n));
+  const perZone=SECTIONS.map(s=>({s,n:active.filter(r=>r.section===s.id).length,i:active.filter(r=>r.section===s.id&&r.st==='checked-in').length}));
+  const maxZ=Math.max(1,...perZone.map(x=>x.n));
+  const perSlot=SLOTS.map(s=>({s,n:active.filter(r=>r.slotId===s.id).length}));
+  const maxS=Math.max(1,...perSlot.map(x=>x.n));
+  const recent=all.filter(r=>r.createdAt).sort((a,b)=>b.createdAt-a.createdAt).slice(0,12);
+  const Tile=(v,t,cls)=>html`<div className=${'stTile '+(cls||'')}><b className="num">${v}</b><span>${t}</span></div>`;
+  return html`
+  <section className="panel sgrid">
+    <div className="row" style=${{justifyContent:'space-between'}}>
+      <span className="hint num" dir="auto">${longDate(from,lang)} — ${longDate(today,lang)}</span>
+      <div className="seg">${[['1',L.today],['7',L.last7],['30',L.last30]].map(([k,t])=>html`<button key=${k} aria-pressed=${range===k} onClick=${()=>setRange(k)}>${t}</button>`)}</div>
+    </div>
+    <div className="stTiles">
+      ${Tile(active.length,L.stBookings)}${Tile(inN,L.st_checked_in||L['st_checked-in'],'ok')}${Tile(noN,L['st_no-show'],'bad')}${Tile(canN,L.st_cancelled)}${Tile(rate+'%',L.stRate,'acc')}${Tile(students,L.stStudents)}${Tile(upcoming.length,L.stUpcoming)}
+    </div>
+  </section>
+  <section className="deskTop">
+    <div className="panel"><h2>${L.stByZone}</h2><div className="bars">${perZone.map(({s,n,i})=>html`<div key=${s.id} className="bar"><span style=${{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>${s[lang]}</span><div className="track"><i style=${{width:(i/maxZ*100)+'%',background:'var(--accent)'}}></i><i style=${{width:((n-i)/maxZ*100)+'%',background:'var(--warn)'}}></i></div><span className="num" style=${{fontWeight:600}}>${n}</span></div>`)}</div></div>
+    <div className="panel"><h2>${L.stByHour}</h2><div className="bars">${perSlot.map(({s,n})=>html`<div key=${s.id} className="bar"><span className="num" dir="ltr" style=${{whiteSpace:'nowrap'}}>${slotLabel(s,L)}</span><div className="track"><i style=${{width:(n/maxS*100)+'%',background:'var(--accent)'}}></i></div><span className="num" style=${{fontWeight:600}}>${n}</span></div>`)}</div></div>
+  </section>
+  ${range!=='1'&&html`<section className="panel"><h2>${L.stByDay}</h2><div className="bars">${perDay.slice().reverse().map(({d,n,i})=>html`<div key=${d} className="bar"><span style=${{whiteSpace:'nowrap'}}>${dayLabel(d,lang)} <span className="num hint">${Number(d.slice(8))}</span></span><div className="track"><i style=${{width:(i/maxDay*100)+'%',background:'var(--accent)'}}></i><i style=${{width:((n-i)/maxDay*100)+'%',background:'var(--warn)'}}></i></div><span className="num" style=${{fontWeight:600}}>${n}</span></div>`)}</div><p className="hint" style=${{margin:'8px 0 0'}}><span className="lg" style=${{background:'var(--accent)'}}></span> ${L['st_checked-in']} · <span className="lg" style=${{background:'var(--warn)'}}></span> ${L.stOther}</p></section>`}
+  <section className="panel"><h2>${L.stRecent}</h2>
+    ${recent.length===0?html`<div className="empty">${L.none}</div>`:html`<div className="tablewrap"><table><thead><tr><th>${L.stWhen}</th><th>${L.colStudent}</th><th>${L.colSection}</th><th>${L.slot}</th><th>${L.colStatus}</th></tr></thead><tbody>${recent.map(r=>html`<tr key=${r.id}><td className="num hint" style=${{whiteSpace:'nowrap'}}>${fmtStamp(r.createdAt,lang)}</td><td><b>${r.studentName}</b> <span className="hint mono" dir="ltr">${r.studentId}</span></td><td>${secById(r.section)[lang]}</td><td className="num" style=${{whiteSpace:'nowrap'}}>${dayLabel(r.date,lang)} · ${slotLabel(slotById(r.slotId),L)}</td><td><span className=${'pill '+BADGE_CLS[r.st==='booked'?'booked':r.st]}>${L['st_'+(r.st==='booked'?'booked':r.st)]}</span></td></tr>`)}</tbody></table></div>`}
+  </section>`;
+}
+
+/* ---------- Alerts: automatic no-shows, automatic warnings, and team notes ---------- */
+function TeamComposer({L,store,say,who}){
+  const role=roleOf(who);
+  const [txt,setTxt]=useState('');const [aud,setAud]=useState('all');const [busy,setBusy]=useState(false);
+  const send=async e=>{e.preventDefault();const t=txt.trim();if(!t) return;setBusy(true);try{await store.sendTeamNote(t,aud);setTxt('');say(L.noteSent)}catch(x){say(L.errGeneric)}setBusy(false)};
+  return html`<form className="teamBox" onSubmit=${send}>
+    <b>${role==='developer'?'📢 '+L.sendNoticeT:'✉️ '+L.sendNoteT}</b>
+    <div className="seg">${[['all',L.audAll],['admin',L.audAdmin]].map(([k,t])=>html`<button key=${k} type="button" aria-pressed=${aud===k} onClick=${()=>setAud(k)}>${t}</button>`)}</div>
+    <textarea id="tn-text" className="search" rows="3" maxLength="1000" placeholder=${role==='developer'?L.noticePh:L.notePh} value=${txt} onInput=${e=>setTxt(e.target.value)}></textarea>
+    <div><button className="btn pri" disabled=${busy||!txt.trim()}>${busy?'…':L.sendBtn}</button></div>
+  </form>`;
+}
+function Alerts({L,lang,store,say,who,alerts,isUnread,cfg}){
+  const role=roleOf(who);const isAdmin=isAdminRole(role);const viewer=role==='viewer';
+  const [only,setOnly]=useState('all');const [busy,setBusy]=useState(false);
+  const canCompose=role==='developer'||viewer||isAdmin;
+  const list=alerts.filter(a=>only==='unread'?isUnread(a):only==='team'?isTeamNote(a):only==='auto'?!isTeamNote(a):true);
+  const unread=alerts.filter(isUnread).length;
   const mark=async ids=>{setBusy(true);try{await store.markAlertsRead(ids)}catch(e){say(L.errGeneric)}setBusy(false)};
   const a=(cfg&&cfg.autoNoShow)||CFG.autoNoShow;
-  return html`<section className="panel sgrid">
+  const ic=k=>({auto_warning:'⚠️',notice:'📢',team_msg:'✉️'}[k]||'⏰');
+  const kindT=x=>x.kind==='auto_warning'?L.alKindW:x.kind==='notice'?L.alKindNotice:x.kind==='team_msg'?L.alKindTeam:L.alKindN;
+  return html`
+  ${canCompose&&html`<section className="panel">${html`<${TeamComposer} L=${L} store=${store} say=${say} who=${who}/>`}</section>`}
+  <section className="panel sgrid">
     <div className="row" style=${{justifyContent:'space-between'}}>
-      <h2 style=${{margin:0}}>🔔 ${L.alertsT}</h2>
-      <div className="row" style=${{gap:'8px'}}>
-        <div className="seg"><button aria-pressed=${!only} onClick=${()=>setOnly(false)}>${L.alAll}</button><button aria-pressed=${only} onClick=${()=>setOnly(true)}>${L.alUnread} <span className="num">(${unread})</span></button></div>
-        <button className="btn" disabled=${busy||!unread} onClick=${()=>mark(null)}>${L.alReadAll}</button>
-      </div>
+      <div className="seg">${[['all',L.alAll],['unread',L.alUnread+' ('+unread+')'],['auto',L.alAuto],['team',L.alTeam]].map(([k,t])=>html`<button key=${k} aria-pressed=${only===k} onClick=${()=>setOnly(k)}><span className="num">${t}</span></button>`)}</div>
+      <button className="btn" disabled=${busy||!unread} onClick=${()=>mark(null)}>${L.alReadAll}</button>
     </div>
     <p className="hint num" style=${{margin:0}}>${a.on?L.autoPrev.replace('{m}',a.minutes)+' '+(a.warnAfter>0?L.autoPrevW.replace('{n}',a.warnAfter).replace('{d}',a.windowDays):L.autoPrevNoW):L.autoPrevOff}</p>
-    ${list.length===0?html`<div className="empty">${L.alNone}</div>`:html`<div className="zlist">${list.map(x=>html`
-      <div key=${x.id} className=${'alRow'+(x.readAt?' read':'')+(x.kind==='auto_warning'?' warn':'')}>
-        <span className="alIc" aria-hidden="true">${x.kind==='auto_warning'?'⚠️':'⏰'}</span>
+    ${list.length===0?html`<div className="empty">${L.alNone}</div>`:html`<div className="zlist">${list.map(x=>{const un=isUnread(x);const mine=x.fromId&&x.fromId===who.id;return html`
+      <div key=${x.id} className=${'alRow'+(un?'':' read')+(x.kind==='auto_warning'?' warn':'')+(x.kind==='notice'?' notice':'')}>
+        <span className="alIc" aria-hidden="true">${ic(x.kind)}</span>
         <div style=${{minWidth:0,flex:'1 1 240px'}}>
-          <div className="row" style=${{gap:'6px'}}><b>${x.kind==='auto_warning'?L.alKindW:L.alKindN}</b>${!x.readAt&&html`<span className="udot" aria-label=${L.newBadge}></span>`}<span className="hint num" style=${{fontSize:'12px',marginInlineStart:'auto'}}>${fmtStamp(x.at,lang)}</span></div>
+          <div className="row" style=${{gap:'6px'}}><b>${kindT(x)}</b>${x.fromName&&html`<span className="hint">${mine?L.you:x.fromName}${x.fromRole?' · '+roleName(x.fromRole,L):''}</span>`}${x.audience==='admin'&&html`<span className="pill s-acc">${L.audAdminShort}</span>`}${un&&html`<span className="udot" aria-label=${L.newBadge}></span>`}<span className="hint num" style=${{fontSize:'12px',marginInlineStart:'auto'}}>${fmtStamp(x.at,lang)}</span></div>
           <div className="alTx">${x.text}</div>
-          ${x.readAt?html`<div className="hint" style=${{fontSize:'11.5px'}}>${L.alReadBy.replace('{n}',x.readBy||'')}</div>`:null}
+          ${!isTeamNote(x)&&x.readAt?html`<div className="hint" style=${{fontSize:'11.5px'}}>${L.alReadBy.replace('{n}',x.readBy||'')}</div>`:null}
         </div>
         <div className="row alAct" style=${{gap:'6px'}}>
           ${isAdmin&&x.uid&&html`<${ManageStudentBtn} L=${L} lang=${lang} store=${store} say=${say} uid=${x.uid} small=${true}/>`}
-          ${!x.readAt&&html`<button className="btn ghost" disabled=${busy} onClick=${()=>mark([x.id])}>${L.alMark}</button>`}
+          ${un&&html`<button className="btn ghost" disabled=${busy} onClick=${()=>mark([x.id])}>${L.alMark}</button>`}
         </div>
-      </div>`)}</div>`}
+      </div>`})}</div>`}
   </section>`;
 }
 
@@ -2054,7 +2163,7 @@ function StaffMessages({L,lang,store,who,threads,say}){
         <div className="row" style=${{gap:'8px'}}>
           <button className="btn ghost backBtn" onClick=${()=>setSel(null)}>${L.back}</button>
           <b>${sel.name}</b><span className="hint mono" dir="ltr">${sel.sid}</span>
-          ${who&&who.role==='admin'&&html`<span style=${{marginInlineStart:'auto'}}><${ManageStudentBtn} L=${L} lang=${lang} store=${store} say=${say} uid=${sel.uid} small=${true}/></span>`}
+          ${who&&isAdminRole(who.role)&&html`<span style=${{marginInlineStart:'auto'}}><${ManageStudentBtn} L=${L} lang=${lang} store=${store} say=${say} uid=${sel.uid} small=${true}/></span>`}
         </div>
         <${Bubbles} L=${L} lang=${lang} msgs=${msgs} mine="staff"/>
         <${Composer} L=${L} onSend=${send}/>`}
@@ -2097,7 +2206,9 @@ function StaffAdmin({L,store,staff,say,who}){
   const [nu,setNu]=useState({u:'',name:'',p:'',p2:'',role:'staff'});
   const [err,setErr]=useState('');const [busy,setBusy]=useState(false);
   const [pwFor,setPwFor]=useState(null);const [pw,setPw]=useState({p:'',p2:''});const [rmFor,setRmFor]=useState(null);const [ren,setRen]=useState(null);
-  const errMsg=c=>({last_admin:L.lastAdmin,username_taken:L.vUserDup,bad_username:L.vUser,weak_password:L.vPw,bad_name:L.vDisp}[c]||L.errGeneric);
+  const meDev=roleOf(who)==='developer';
+  const roleChoices=[['staff',L.roleStaff,L.roleStaffD],['viewer',L.roleViewer,L.roleViewerD],['admin',L.roleAdmin,L.roleAdminD],...(meDev||!staff.some(x=>roleOf(x)==='developer'&&x.active!==false)?[['developer',L.roleDev,L.roleDevD]]:[])];
+  const errMsg=c=>({forbidden:L.devOnlyAcc,last_admin:L.lastAdmin,username_taken:L.vUserDup,bad_username:L.vUser,weak_password:L.vPw,bad_name:L.vDisp}[c]||L.errGeneric);
   const op=async(action,payload,msg)=>{setBusy(true);setErr('');const r=await store.adminOp(action,payload);setBusy(false);if(!r.ok){setErr(errMsg(r.error));return false}say(msg);return true};
   const checkPw=(a,b)=>a.length<8?L.vPw:a!==b?L.vPwMatch:'';
   async function add(e){
@@ -2114,15 +2225,15 @@ function StaffAdmin({L,store,staff,say,who}){
     ${staff.length===0&&html`<span className="hint">${L.noStaff}</span>`}
     <div className="zlist">${staff.map(x=>html`<div key=${x.id} className="srow">
       <div style=${{minWidth:0}}><b>${x.name}</b> <span className="hint mono" dir="ltr">@${x.u}</span>${who&&who.id===x.id&&html` <span className="hint">(${L.you})</span>`}</div>
-      <span className=${'pill '+(roleOf(x)==='admin'?'s-acc':'s-ok')}>${roleOf(x)==='admin'?L.roleAdmin:L.roleStaff}</span>
+      <span className=${'pill '+ROLE_PILL[roleOf(x)]}>${roleName(roleOf(x),L)}</span>
       ${x.active===false&&html`<span className="pill s-mut">${L.disabled}</span>`}
-      <div className="row" style=${{gap:'6px',marginInlineStart:'auto'}}>
+      ${roleOf(x)==='developer'&&!meDev?html`<span className="hint" style=${{marginInlineStart:'auto'}}>${L.devLocked}</span>`:html`<div className="row" style=${{gap:'6px',marginInlineStart:'auto'}}>
         <button className="btn" disabled=${busy} onClick=${()=>setRen(ren&&ren.id===x.id?null:{id:x.id,name:x.name})}>${L.renameStaff}</button>
         <button className="btn" disabled=${busy} onClick=${()=>{setPwFor(pwFor===x.id?null:x.id);setPw({p:'',p2:''});setErr('')}}>${L.resetPw}</button>
-        <button className="btn" disabled=${busy} onClick=${()=>op('updateStaff',{id:x.id,role:roleOf(x)==='admin'?'staff':'admin'},L.staffSaved)}>${roleOf(x)==='admin'?L.makeStaff:L.makeAdmin}</button>
+        <select id=${'rl-'+x.id} className="search" style=${{width:'auto',padding:'6px 8px'}} disabled=${busy} value=${roleOf(x)} aria-label=${L.role} onChange=${e=>{const v=e.target.value;if(v!==roleOf(x))op('updateStaff',{id:x.id,role:v},L.staffSaved)}}>${roleChoices.map(([k,t])=>html`<option key=${k} value=${k}>${t}</option>`)}</select>
         <button className="btn" disabled=${busy} onClick=${()=>op('updateStaff',{id:x.id,active:x.active===false},L.staffSaved)}>${x.active!==false?L.disable:L.enable}</button>
         ${rmFor===x.id?html`<button className="btn bad" disabled=${busy} onClick=${()=>{setRmFor(null);op('deleteStaff',{id:x.id},L.staffRemoved)}}>${L.removeAsk}</button>`:html`<button className="btn bad" onClick=${()=>setRmFor(x.id)}>${L.remove}</button>`}
-      </div>
+      </div>`}
       ${ren&&ren.id===x.id&&html`<div className="pwrow">
         <input id=${'rn-'+x.id} className="search" value=${ren.name} onInput=${e=>{const v=e.target.value;setRen(r=>({...r,name:v}))}}/>
         <button className="btn pri" disabled=${busy||ren.name.trim().length<2} onClick=${async()=>{if(await op('updateStaff',{id:x.id,name:ren.name.trim()},L.staffSaved))setRen(null)}}>${L.saveChanges}</button>
@@ -2139,7 +2250,7 @@ function StaffAdmin({L,store,staff,say,who}){
       <div className="field"><label htmlFor="ns-p">${L.password}</label><input id="ns-p" type="password" dir="ltr" autoComplete="new-password" value=${nu.p} onInput=${e=>{const v=e.target.value;setNu(s=>({...s,p:v}))}}/></div>
       <div className="field"><label htmlFor="ns-p2">${L.confirmPw}</label><input id="ns-p2" type="password" dir="ltr" autoComplete="new-password" value=${nu.p2} onInput=${e=>{const v=e.target.value;setNu(s=>({...s,p2:v}))}}/></div>
       <div className="field" style=${{gridColumn:'1/-1'}}><label>${L.role}</label>
-        <div className="roles">${[['staff',L.roleStaff,L.roleStaffD],['admin',L.roleAdmin,L.roleAdminD]].map(([k,t,dsc])=>html`<button key=${k} type="button" className="pz" aria-pressed=${nu.role===k} onClick=${()=>setNu(s=>({...s,role:k}))}><span><b>${t}</b><span className="hint" style=${{display:'block'}}>${dsc}</span></span></button>`)}</div>
+        <div className="roles">${roleChoices.map(([k,t,dsc])=>html`<button key=${k} type="button" className="pz" aria-pressed=${nu.role===k} onClick=${()=>setNu(s=>({...s,role:k}))}><span><b>${t}</b><span className="hint" style=${{display:'block'}}>${dsc}</span></span></button>`)}</div>
       </div>
       <button className="btn pri" disabled=${busy}>+ ${L.addStaff}</button>
     </form>
@@ -2198,7 +2309,7 @@ function Settings({L,lang,store,say,cfg,staff,who}){
     c.zoneClosures=(c.zoneClosures||[]).map(x=>({section:x.section,from:x.from,to:x.to||'',reason:(x.reason||'').trim()}));
     {const r={};(c.weeklyOff||[]).forEach(k=>{const v=((c.weeklyOffReasons||{})[k]||'').trim();if(v)r[k]=v});c.weeklyOffReasons=r}
     setErr('');setBusy(true);
-    try{await store.saveConfig(c);setDraft(clone(c));say(L.savedSettings)}catch(x){setErr(x&&x.code==='invalid_argument'?L.deskOnly:L.errGeneric)}
+    try{await store.saveConfig(c);setDraft(clone(c));say(L.savedSettings)}catch(x){setErr(x&&x.code==='invalid_argument'?L.deskOnly:/developer_only/.test(String((x&&x.message)||x))?L.identityDevOnly:L.errGeneric)}
     setBusy(false);
   }
   const newSlotId=()=>Math.max(0,...draft.slots.map(s=>+s.id||0))+1;
@@ -2206,7 +2317,7 @@ function Settings({L,lang,store,say,cfg,staff,who}){
   return html`
   <${StudentAccountsAdmin} L=${L} lang=${lang} store=${store} say=${say}/>
   <${StaffAdmin} L=${L} store=${store} staff=${staff} say=${say} who=${who}/>
-  <section className="panel sgrid">
+  ${roleOf(who)!=='developer'?html`<section className="panel"><p className="hint" style=${{margin:0}}>🔒 ${L.identityDevOnly}</p></section>`:html`<section className="panel sgrid">
     <h2>${L.identity}</h2>
     <div className="row" style=${{alignItems:'flex-start',gap:'16px'}}>
       <div className="logoBox">${draft.logo?html`<img src=${draft.logo} alt=${L.logo}/>`:html`<div className="mark" style=${{width:'64px',height:'64px',borderRadius:'16px'}}><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg></div>`}</div>
@@ -2220,7 +2331,7 @@ function Settings({L,lang,store,say,cfg,staff,who}){
       <div className="field"><label htmlFor="st-nar">${L.nameAr}</label><input id="st-nar" dir="rtl" value=${draft.name.ar} onInput=${e=>{const v=e.target.value;up(d=>{d.name.ar=v})}}/></div>
       <div className="field"><label htmlFor="st-nen">${L.nameEn}</label><input id="st-nen" dir="ltr" value=${draft.name.en} onInput=${e=>{const v=e.target.value;up(d=>{d.name.en=v})}}/></div>
     </div>
-  </section>
+  </section>`}
 
   <section className="panel sgrid">
     <div className="row" style=${{justifyContent:'space-between'}}><h2 style=${{margin:0}}>${L.zones}</h2><span className="pill s-acc num">${L.totalCap}: ${total}</span></div>
@@ -2331,7 +2442,7 @@ function Settings({L,lang,store,say,cfg,staff,who}){
     <div className="wrap row" style=${{justifyContent:'space-between'}}>
       <span className="hint">${err?html`<span style=${{color:'var(--bad)',fontWeight:600}}>${err}</span>`:dirty?L.unsaved:''}</span>
       <div className="row">
-        <button className="btn ghost" onClick=${()=>{setDraft(clone(normCfg({...DEFAULT_CFG,logo:draft.logo})));setErr('')}}>${L.resetDefaults}</button>
+        <button className="btn ghost" onClick=${()=>{setDraft(clone(normCfg({...DEFAULT_CFG,logo:draft.logo,name:draft.name})));setErr('')}}>${L.resetDefaults}</button>
         ${dirty&&html`<button className="btn" onClick=${()=>{setDraft(clone(cfg));setErr('')}}>${L.discard}</button>`}
         <button className="btn pri" disabled=${!dirty||busy} onClick=${save}>${busy?'…':L.saveSettings}</button>
       </div>

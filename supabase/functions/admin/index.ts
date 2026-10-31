@@ -3,13 +3,17 @@
 //
 // Handles the actions that need Supabase's service role:
 //   bootstrap            create the first system admin (only while none exists)
-//   createStaff          add a management account          (system admin only)
+//   createStaff         add a management account          (system admin only)
 //   updateStaff          change name / role / active flag   (system admin only)
 //   setStaffPassword     set a staff member's password      (system admin only)
 //   deleteStaff          remove a management account        (system admin only)
 //   resetStudentPassword issue a temporary student password (system admin only)
 //   updateStudent        edit a student's name / ID / college / phone (system admin only)
 //   deleteStudent        delete a student account and all its data   (system admin only)
+// Roles: staff (reception), admin (system admin), developer (admin + name/logo),
+// viewer (read-only follow-up). "system admin" above means admin or developer.
+// A system admin may create the first developer account; after that only a
+// developer may create, change or remove developer accounts.
 // The function checks the caller itself, so deploy it with JWT verification off.
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -24,6 +28,8 @@ const STAFF_DOMAIN = Deno.env.get("STAFF_EMAIL_DOMAIN") ?? "staff.example.com";
 const STUDENT_DOMAIN = Deno.env.get("STUDENT_EMAIL_DOMAIN") ?? "students.example.com";
 const SID = /^[0-9]{4,12}$/;
 const USERNAME = /^[a-z0-9._-]{3,24}$/;
+const ROLES = ["staff", "admin", "developer", "viewer"];
+const ADMIN_ROLES = ["admin", "developer"];
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
@@ -48,11 +54,11 @@ Deno.serve(async (req) => {
   const action = String(body.action ?? "");
 
   async function activeAdmins(): Promise<{ id: string }[]> {
-    const { data } = await admin.from("staff").select("id").eq("role", "admin").eq("active", true);
+    const { data } = await admin.from("staff").select("id").in("role", ["admin", "developer"]).eq("active", true);
     return data ?? [];
   }
 
-  async function createStaff(b: Record<string, unknown>, role: "staff" | "admin") {
+  async function createStaff(b: Record<string, unknown>, role: string) {
     const username = String(b.username ?? "").trim().toLowerCase();
     const name = String(b.name ?? "").trim();
     const password = String(b.password ?? "");
@@ -82,22 +88,37 @@ Deno.serve(async (req) => {
   const { data: who } = await admin.auth.getUser(jwt);
   if (!who?.user) return json({ error: "forbidden" }, 403);
   const { data: me } = await admin.from("staff").select("*").eq("id", who.user.id).maybeSingle();
-  if (!me || !me.active || me.role !== "admin") return json({ error: "forbidden" }, 403);
+  if (!me || !me.active || !ADMIN_ROLES.includes(me.role)) return json({ error: "forbidden" }, 403);
+  const isDev = me.role === "developer";
+  // A system admin may create the first developer account; after that only a developer may.
+  const { count: devCount } = await admin.from("staff").select("id", { count: "exact", head: true }).eq("role", "developer").eq("active", true);
+  const allowedRole = (r: unknown) =>
+    typeof r === "string" && ROLES.includes(r) && (r !== "developer" || isDev || (devCount ?? 0) === 0);
 
   const id = String(body.id ?? "");
+  // Only a developer may touch a developer account.
+  if (["updateStaff", "setStaffPassword", "deleteStaff"].includes(action) && !isDev) {
+    const { data: t } = await admin.from("staff").select("role").eq("id", id).maybeSingle();
+    if (t && t.role === "developer") return json({ error: "forbidden" }, 403);
+  }
 
   switch (action) {
     case "createStaff":
-      return await createStaff(body, body.role === "admin" ? "admin" : "staff");
+      if (body.role !== undefined && !allowedRole(body.role)) return json({ error: "forbidden" }, 403);
+      return await createStaff(body, typeof body.role === "string" ? body.role : "staff");
 
     case "updateStaff": {
       const { data: target } = await admin.from("staff").select("*").eq("id", id).maybeSingle();
       if (!target) return json({ error: "not_found" }, 404);
       const patch: Record<string, unknown> = {};
       if (typeof body.name === "string" && body.name.trim().length >= 2) patch.name = body.name.trim();
-      if (body.role === "admin" || body.role === "staff") patch.role = body.role;
+      if (body.role !== undefined) {
+        if (!allowedRole(body.role)) return json({ error: "forbidden" }, 403);
+        patch.role = body.role;
+      }
       if (typeof body.active === "boolean") patch.active = body.active;
-      const losesAdmin = target.role === "admin" && target.active && (patch.role === "staff" || patch.active === false);
+      const losesAdmin = ADMIN_ROLES.includes(target.role) && target.active &&
+        ((typeof patch.role === "string" && !ADMIN_ROLES.includes(patch.role)) || patch.active === false);
       if (losesAdmin && (await activeAdmins()).length <= 1) return json({ error: "last_admin" }, 409);
       const { error } = await admin.from("staff").update(patch).eq("id", id);
       if (error) return json({ error: "failed", detail: error.message }, 500);
@@ -120,7 +141,7 @@ Deno.serve(async (req) => {
     case "deleteStaff": {
       const { data: target } = await admin.from("staff").select("*").eq("id", id).maybeSingle();
       if (!target) return json({ error: "not_found" }, 404);
-      if (target.role === "admin" && target.active && (await activeAdmins()).length <= 1) {
+      if (ADMIN_ROLES.includes(target.role) && target.active && (await activeAdmins()).length <= 1) {
         return json({ error: "last_admin" }, 409);
       }
       const { error } = await admin.auth.admin.deleteUser(id);
