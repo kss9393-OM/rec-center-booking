@@ -92,7 +92,7 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 2. اضغط زر **تثبيت التطبيق** في أعلى الصفحة، أو من قائمة Chrome (⋮) اختر **تثبيت التطبيق** / **إضافة إلى الشاشة الرئيسية**.
 3. يظهر التطبيق بشعار الكلية على الشاشة الرئيسية ويفتح بملء الشاشة. أي تحديث على GitHub يصل إليه تلقائياً.
 
-(على iPhone: افتح الرابط في Safari، ثم زر المشاركة ثم **إضافة إلى الشاشة الرئيسية**.)
+**على iPhone / iPad:** افتح الرابط في **Safari** ← اضغط **تثبيت التطبيق** أعلى الصفحة لعرض الخطوات، أو مباشرة: زر المشاركة ← **إضافة إلى الشاشة الرئيسية** ← **إضافة**. التقارير والتذاكر تُحفظ عبر قائمة المشاركة (الحفظ في الملفات، AirDrop، …).
 
 ---
 
@@ -167,7 +167,7 @@ If the code appears in the field but isn't submitted, add the `\n` suffix. If no
 2. Tap **Install app** at the top of the page, or Chrome's menu (⋮) → **Install app** / **Add to Home screen**.
 3. The app appears on the home screen with the college logo and opens full screen. Updates pushed to GitHub reach it automatically.
 
-(On iPhone: open the link in Safari, tap Share, then **Add to Home Screen**.)
+**On iPhone / iPad:** open the link in **Safari** → tap **Install app** at the top for the steps, or directly: Share → **Add to Home Screen** → **Add**. Reports and passes are saved through the Share sheet (Save to Files, AirDrop, …).
 
 ---
 

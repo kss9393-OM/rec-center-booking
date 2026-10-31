@@ -10,6 +10,16 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="المركز الترفيهي">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash-1290x2796.png">
+<link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash-1179x2556.png">
+<link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash-1284x2778.png">
+<link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash-1170x2532.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash-1125x2436.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/splash-1242x2688.png">
+<link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash-828x1792.png">
+<link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash-750x1334.png">
+<link rel="apple-touch-startup-image" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/splash-640x1136.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <script>
   // Remember Android's install offer so the app can show its own "Install" button.
@@ -173,7 +183,7 @@ tr.late td{background:var(--warn-soft)}
 .mine{display:grid;gap:10px}
 .mineRow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
 .logo{width:40px;height:40px;border-radius:10px;object-fit:contain;background:#fff;flex:none}
-@media (max-width:640px){.topin .brand{flex:1 1 100%}.topin .tabs{flex:1 1 auto}.topin .tabs button{flex:1}.brand h1{font-size:16px}}
+@media (max-width:640px){.topin{gap:8px 8px}.topin .brand{flex:1 1 0;min-width:0}.topin .lang{order:1;padding:6px 9px;font-size:12.5px}.topin .tabs{order:2;flex:1 1 100%}.topin .tabs button{flex:1}.brand h1{font-size:15px}.brand small{display:none}}
 .chip.off{border-style:dashed;color:var(--muted)}
 .chip.off[aria-pressed="true"]{background:var(--bad);border-color:var(--bad);color:var(--surface)}
 .offTag{font-size:10.5px;color:var(--bad);font-weight:600}
@@ -252,6 +262,9 @@ details summary{list-style-position:inside}
 .mgSec h3{font-size:15px;display:flex;align-items:center;gap:8px}
 .dangerSec h3{color:var(--bad)}
 .warnBox{border-color:var(--warn)}
+.iosSteps{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:st}
+.iosSteps li{display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.iosSteps .ic{flex:none;min-width:40px;height:40px;padding:0 8px;border-radius:10px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);color:var(--accent)}
 .viewSeg{flex-wrap:wrap}.viewSeg button{white-space:nowrap}
 .pz.on,.pz[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .scanBar{display:grid;gap:10px;border-width:2px;cursor:text}
@@ -300,7 +313,7 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=12"></script>
+<script src="config.js?v=13"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -437,6 +450,7 @@ const T={
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
   windowT:'فترة الحجز المتاحة للطلاب',windowHint:'حدّد إلى أي يوم يستطيع الطلاب الحجز مقدماً. يُطبَّق على الخادم فوراً.',win0:'اليوم فقط',win1:'اليوم وغداً',win2:'حتى بعد غد',winN:'عدد الأيام القادمة:',winPreview:'يرى الطلاب {n} يوم/أيام للحجز (بما فيها اليوم).',vAhead:'عدد الأيام القادمة من 0 إلى 30.',errTooFar:'لا يمكن الحجز لهذا اليوم بعد؛ الحجز متاح لأيام محددة مقدماً.',
   msgAllShift:'رسالة لكل طلاب هذه الفترة',oneDay:'يوم واحد',dateRange:'عدة أيام',rptFrom:'من',rptTo:'إلى',rptDays:'أيام',rptByDay:'حسب اليوم',rptCont:'تابع',windowDays:'{n} أيام',badRange:'اختر تاريخ بداية ونهاية صحيحين (حتى 62 يوماً).',
+  iosT:'تثبيت التطبيق على iPhone',iosSub:'أضف النظام إلى الشاشة الرئيسية ليعمل كتطبيق',ios1:'اضغط زر المشاركة أسفل الشاشة في Safari (أو أعلاها في iPad).',ios2:'اختر «إضافة إلى الشاشة الرئيسية» (قد تحتاج للتمرير للأسفل).',ios3:'اضغط «إضافة» أعلى الشاشة. سيظهر التطبيق بشعار الكلية.',iosAdd:'إضافة',iosNote:'استخدم متصفح Safari. بعد التثبيت افتح التطبيق من أيقونته على الشاشة الرئيسية.',iosOk:'فهمت',
   scanTab:'المسح',scanReady:'جاهز — اضغط زر المسح',scanTapToStart:'اضغط هنا لتفعيل المسح',scanCount:'دخل {n}',scanWaitPh:'بانتظار مسح التذكرة…',scanTypePh:'اكتب رمز التذكرة، مثل CRC-2026-AB12',scanCheck:'تحقق',scanManual:'إدخال يدوي',scanAuto:'العودة للمسح',soundOn:'الصوت: يعمل',soundOff:'الصوت: متوقف',
   scanIdleT:'امسح تذكرة الطالب',scanIdleH:'وجّه الماسح إلى رمز QR في تذكرة الطالب. يُسجَّل الدخول تلقائياً وتظهر النتيجة هنا.',scanRecent:'آخر عمليات المسح',
   camScan:'المسح بالكاميرا',camHint:'وجّه الكاميرا إلى رمز QR.',camFail:'تعذّر تشغيل الكاميرا. اسمح للموقع باستخدامها، أو استخدم ماسح الجهاز.',
@@ -522,6 +536,7 @@ const T={
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
   windowT:'Student booking window',windowHint:'Choose how far ahead students can book. Enforced by the server immediately.',win0:'Today only',win1:'Today and tomorrow',win2:'Through the day after',winN:'Days ahead:',winPreview:'Students see {n} day(s) to book, including today.',vAhead:'Days ahead must be 0 to 30.',errTooFar:'That day isn’t open for booking yet.',
   msgAllShift:'Message everyone this shift',oneDay:'One day',dateRange:'Date range',rptFrom:'From',rptTo:'To',rptDays:'days',rptByDay:'By day',rptCont:'cont.',windowDays:'{n} days',badRange:'Choose a valid start and end date (up to 62 days).',
+  iosT:'Install on iPhone',iosSub:'Add the system to your Home Screen to use it as an app',ios1:'Tap the Share button at the bottom of Safari (top on iPad).',ios2:'Choose “Add to Home Screen” (you may need to scroll down).',ios3:'Tap “Add” at the top. The app appears with the college logo.',iosAdd:'Add',iosNote:'Use Safari. After installing, open the app from its Home Screen icon.',iosOk:'Got it',
   scanTab:'Scan',scanReady:'Ready — press the scan button',scanTapToStart:'Tap here to start scanning',scanCount:'{n} in',scanWaitPh:'Waiting for a ticket scan…',scanTypePh:'Type the ticket code, e.g. CRC-2026-AB12',scanCheck:'Check',scanManual:'Type a code',scanAuto:'Back to scanning',soundOn:'Sound: on',soundOff:'Sound: off',
   scanIdleT:'Scan a student’s ticket',scanIdleH:'Aim the scanner at the QR code on the student’s pass. Check-in happens automatically and the result shows here.',scanRecent:'Recent scans',
   camScan:'Scan with camera',camHint:'Point the camera at the QR code.',camFail:'Couldn’t start the camera. Allow camera access, or use the device scanner.',
@@ -839,9 +854,13 @@ function App(){
       <div style=${{minWidth:0}}><h1>${cfg.name[lang]||cfg.name.ar||cfg.name.en}</h1><small>${L.brandSub}</small></div>
     </div>`;
   const [canInstall,setCanInstall]=useState(()=>!!window.__bip);
+  const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const standalone=window.navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);
+  const [iosHelp,setIosHelp]=useState(false);
+  const showIosInstall=isIOS&&!standalone&&!window.AndroidApp;
   useEffect(()=>{const on=()=>setCanInstall(true),off=()=>{window.__bip=null;setCanInstall(false)};window.addEventListener('crc-installable',on);window.addEventListener('appinstalled',off);return()=>{window.removeEventListener('crc-installable',on);window.removeEventListener('appinstalled',off)}},[]);
   const install=async()=>{const e=window.__bip;if(!e) return;e.prompt();try{await e.userChoice}catch(x){}window.__bip=null;setCanInstall(false)};
-  const langBtn=html`${canInstall&&html`<button className="lang installBtn" onClick=${install}>${L.installApp}</button>`}<button className="lang" onClick=${()=>setLang(lang==='ar'?'en':'ar')} aria-label="Language">${lang==='ar'?'English':'العربية'}</button>`;
+  const langBtn=html`${canInstall&&html`<button className="lang installBtn" onClick=${install}>${L.installApp}</button>`}${showIosInstall&&html`<button className="lang installBtn" onClick=${()=>setIosHelp(true)}>${L.installApp}</button>`}<button className="lang" onClick=${()=>setLang(lang==='ar'?'en':'ar')} aria-label="Language">${lang==='ar'?'English':'العربية'}</button>`;
   const footer=html`<footer className="foot"><div className="wrap"><span>© ${new Date().getFullYear()} Services Squire LLC</span><span>${L.rights}</span></div></footer>`;
 
   if(!store) return html`<header className="top"><div className="wrap topin">${brand}${langBtn}</div></header>
@@ -868,7 +887,25 @@ function App(){
   </div></header>
   <main className="wrap">${netErr&&html`<div className="banner"><b>${L.netTitle}</b><span>${L.netText}</span></div>`}${body}</main>
   ${footer}
-  ${toast&&html`<div className="toast" role="status"><div>${toast}</div></div>`}`;
+  ${toast&&html`<div className="toast" role="status"><div>${toast}</div></div>`}
+  ${iosHelp&&html`<${IosInstall} L=${L} lang=${lang} onClose=${()=>setIosHelp(false)}/>`}`;
+}
+
+/* How to install on iPhone / iPad (Safari has no install prompt) */
+function IosInstall({L,lang,onClose}){
+  const shareIcon=html`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>`;
+  const addIcon=html`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/></svg>`;
+  return html`<${Modal} onClose=${onClose}>
+    <div className="mh"><h2>${L.iosT}</h2><button className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
+    <${AuthBrand} lang=${lang} sub=${L.iosSub}/>
+    <ol className="iosSteps">
+      <li><span className="ic">${shareIcon}</span><span>${L.ios1}</span></li>
+      <li><span className="ic">${addIcon}</span><span>${L.ios2}</span></li>
+      <li><span className="ic"><b>${L.iosAdd}</b></span><span>${L.ios3}</span></li>
+    </ol>
+    <p className="hint" style=${{margin:0}}>${L.iosNote}</p>
+    <div className="row" style=${{justifyContent:'flex-end'}}><button className="btn pri" onClick=${onClose}>${L.iosOk}</button></div>
+  </${Modal}>`;
 }
 
 /* First system admin (only while none exists) */
@@ -1559,6 +1596,12 @@ async function saveFile(name,blob){
     const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=rej;r.readAsDataURL(blob)});
     if(AndroidApp.saveFile(name,blob.type||'application/octet-stream',b64)) return;
     throw new Error('save failed');
+  }
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(ios&&navigator.canShare){
+    try{const file=new File([blob],name,{type:blob.type||'application/octet-stream'});
+      if(navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return}}
+    catch(e){if(e&&e.name==='AbortError') return}
   }
   let dl=null;try{dl=window.claude&&claude.use?await claude.use('downloads'):null}catch(e){}
   if(dl){await dl.save({filename:name,data:blob});return}
