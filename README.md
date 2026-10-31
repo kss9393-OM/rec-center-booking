@@ -68,6 +68,16 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 - **مدير النظام:** كل ما سبق، والإعدادات، والحسابات، وإصدار كلمات مرور مؤقتة للطلاب.
 - قواعد الحجز (السعة، ساعة واحدة يومياً، أيام الإغلاق، انتهاء وقت الحجز) **يفرضها الخادم**، ولا يمكن تجاوزها من المتصفح.
 
+### ماسح التذاكر (Honeywell EDA52 وأجهزة المسح المشابهة)
+**إعداد الجهاز مرة واحدة:** الإعدادات ← **Honeywell Settings** ← **Scanning** ← **Internal Scanner** ← **Default Profile** ← **Data Processing Settings**:
+- **Wedge:** مفعّل.
+- **Wedge Method:** ‏Keyboard (أو Standard).
+- **Suffix:** ‏`\n` (إدخال Enter بعد كل مسح) — يُفضَّل، والتطبيق يعمل بدونه أيضاً.
+- تأكد من تفعيل **QR Code** في **Symbology Settings** (مفعّل عادةً).
+
+**الاستخدام:** افتح الموقع في Chrome على الجهاز ← ثبّته كتطبيق ← **الإدارة** ← سجّل الدخول ← تبويب **المسح**، ثم اضغط زر المسح الجانبي على تذكرة الطالب. يُسجَّل الدخول فوراً مع صوت واهتزاز ونتيجة ملوّنة (أخضر: تم، أصفر: يحتاج انتباه، أحمر: مرفوض).
+إذا ظهر الرمز في الخانة دون أن يُرسَل: أضف Suffix ‏`\n`. إذا لم يظهر شيء: غيّر Wedge Method إلى Keyboard.
+
 ### تثبيت التطبيق على أندرويد
 1. افتح رابط الموقع في **Chrome** على الهاتف.
 2. اضغط زر **تثبيت التطبيق** في أعلى الصفحة، أو من قائمة Chrome (⋮) اختر **تثبيت التطبيق** / **إضافة إلى الشاشة الرئيسية**.
@@ -124,6 +134,16 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 - **Reception staff:** check-ins, messages and reports.
 - **System admin:** all of the above plus settings, accounts and temporary student passwords.
 - Booking rules (capacity, one hour per day, closed days, booking cut-off) are **enforced by the server** and can't be bypassed from the browser.
+
+### Ticket scanner (Honeywell EDA52 and similar devices)
+**One-time device setup:** Settings → **Honeywell Settings** → **Scanning** → **Internal Scanner** → **Default Profile** → **Data Processing Settings**:
+- **Wedge:** on.
+- **Wedge Method:** Keyboard (or Standard).
+- **Suffix:** `\n` (Enter after each scan) — recommended; the app also works without it.
+- Make sure **QR Code** is enabled under **Symbology Settings** (it usually is).
+
+**Use:** open the site in Chrome on the device → install it as an app → **Management** → sign in → **Scan** tab, then press the side scan button on the student's pass. Check-in happens instantly with a beep, vibration and a colour-coded result (green: done, amber: needs attention, red: refused).
+If the code appears in the field but isn't submitted, add the `\n` suffix. If nothing appears, set Wedge Method to Keyboard.
 
 ### Install on Android
 1. Open the site link in **Chrome** on the phone.

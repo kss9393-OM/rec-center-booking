@@ -250,6 +250,36 @@ details summary{list-style-position:inside}
 .mgSec h3{font-size:15px;display:flex;align-items:center;gap:8px}
 .dangerSec h3{color:var(--bad)}
 .warnBox{border-color:var(--warn)}
+.scanBar{display:grid;gap:10px;border-width:2px;cursor:text}
+.scanBar.on{border-color:var(--ok)}
+.scanStatus{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.scanStatus b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.scanDot{width:12px;height:12px;border-radius:50%;background:var(--muted);flex:none}
+.scanDot.on{background:var(--ok);box-shadow:0 0 0 4px var(--ok-soft)}
+@media (prefers-reduced-motion:no-preference){.scanDot.on{animation:pulse 1.4s ease-in-out infinite}@keyframes pulse{50%{box-shadow:0 0 0 8px transparent}}}
+.scanInput{flex:1;font-family:var(--f-mono);font-size:16px;min-width:0}
+.scanInput::placeholder{font-family:var(--f-body);letter-spacing:0}
+@media (max-width:520px){
+  .mgBar{gap:6px 8px;padding:8px 10px}.mgBar .hideSm{display:none}
+  .mgNav{width:100%;margin-inline-start:0!important}.mgNav .seg{flex:1;display:flex}.mgNav .seg button{flex:1;padding:8px 4px}
+  .scanBar{padding:10px 12px;gap:8px}.scanOpts .btn{padding:6px 10px;font-size:13px}
+  .scanRes{padding:14px;gap:10px}.scanWho .nm{font-size:21px}.scanHead h2{font-size:19px}.scanMark{width:38px;height:38px;font-size:22px}
+  main{gap:12px}
+}
+.scanIdle{display:grid;justify-items:center;text-align:center;gap:8px;padding-block:32px}
+.scanIcon{font-size:44px;line-height:1;color:var(--muted)}
+.scanRes{border-radius:var(--r);padding:18px;display:grid;gap:12px;border:2px solid var(--st);background:var(--stsoft)}
+.scanRes.k-ok{--st:var(--ok);--stsoft:var(--ok-soft)}.scanRes.k-warn{--st:var(--warn);--stsoft:var(--warn-soft)}.scanRes.k-bad{--st:var(--bad);--stsoft:var(--bad-soft)}
+.scanHead{display:flex;align-items:center;gap:12px}
+.scanHead h2{font-size:22px;color:var(--st)}
+.scanMark{width:44px;height:44px;border-radius:50%;background:var(--st);color:var(--surface);display:grid;place-items:center;font-size:26px;font-weight:700;flex:none}
+.scanWho .nm{font-family:var(--f-display);font-size:24px;font-weight:600;line-height:1.25}
+.scanWho .mono{font-size:16px;color:var(--muted)}
+.scanKv{margin:0;background:var(--surface);border-radius:10px;padding:12px}
+.scanNote{margin:0;font-weight:600}
+.scanFlag{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--surface);border-radius:10px;padding:10px 12px;border-inline-start:4px solid var(--warn)}
+.scanFlag.bad{border-inline-start-color:var(--bad);color:var(--bad)}
+.camVid{width:100%;border-radius:12px;background:#000;aspect-ratio:1;object-fit:cover;max-width:100%}
 .pendingV{background:var(--accent-soft)}.pendingV b{color:var(--accent)}
 .savebar{position:sticky;bottom:0;z-index:4;background:var(--surface);border-top:1px solid var(--line);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-block:12px calc(12px + env(safe-area-inset-bottom,0px))}
 @media (max-width:860px){.zrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.zrow .iconPick{grid-column:1/-1}.zrow .rm{justify-self:start}}
@@ -266,7 +296,7 @@ details summary{list-style-position:inside}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="config.js?v=9"></script>
+<script src="config.js?v=10"></script>
 <script>
 const {useState,useEffect,useMemo,useRef,useCallback}=React;
 const html=htm.bind(React.createElement);
@@ -399,6 +429,11 @@ const T={
   msgTab:'الرسائل',chatTitle:'المراسلة مع الإدارة',chatHint:'اكتب استفسارك وسيرد عليك أحد الموظفين هنا.',chatPh:'اكتب رسالة…',you2:'أنت',staffLbl:'الإدارة',
   convos:'المحادثات',newConvo:'محادثة جديدة',sidPh:'الرقم الجامعي',open2:'فتح',noConvos:'لا توجد محادثات بعد.',pickConvo:'اختر محادثة أو ابدأ واحدة جديدة.',
   notFoundSid:'لا يوجد طالب مسجّل بهذا الرقم الجامعي.',back:'رجوع',searchConvo:'ابحث بالاسم أو الرقم',studentLbl:'الطالب',
+  scanTab:'المسح',scanReady:'جاهز — اضغط زر المسح',scanTapToStart:'اضغط هنا لتفعيل المسح',scanCount:'دخل {n}',scanWaitPh:'بانتظار مسح التذكرة…',scanTypePh:'اكتب رمز التذكرة، مثل CRC-2026-AB12',scanCheck:'تحقق',scanManual:'إدخال يدوي',scanAuto:'العودة للمسح',soundOn:'الصوت: يعمل',soundOff:'الصوت: متوقف',
+  scanIdleT:'امسح تذكرة الطالب',scanIdleH:'وجّه الماسح إلى رمز QR في تذكرة الطالب. يُسجَّل الدخول تلقائياً وتظهر النتيجة هنا.',scanRecent:'آخر عمليات المسح',
+  camScan:'المسح بالكاميرا',camHint:'وجّه الكاميرا إلى رمز QR.',camFail:'تعذّر تشغيل الكاميرا. اسمح للموقع باستخدامها، أو استخدم ماسح الجهاز.',
+  sc_ok:'تم تسجيل الدخول',sc_already:'سبق تسجيل دخوله',sc_alreadyBy:'سجّله {n} في {t}',sc_early:'مبكر — لم يحن موعد ساعته',sc_ended:'انتهت ساعة هذا الحجز',sc_noshow:'سُجّل سابقاً "لم يحضر" وحُرّر مقعده',sc_future:'التذكرة ليوم آخر قادم',sc_past:'التذكرة ليوم سابق',sc_cancelled:'الحجز ملغى',sc_notfound:'تذكرة غير موجودة',sc_invalid:'رمز غير صالح — ليس تذكرة المركز',sc_ambiguous:'الرمز مكرر — ابحث بالرقم الجامعي من الاستقبال',sc_error:'تعذّر الاتصال — حاول مجدداً',
+  sc_force:'تسجيل الدخول على أي حال',sc_late:'متأخر أكثر من 10 دقائق',sc_verifyHint:'طابق الاسم والرقم مع البطاقة الجامعية.',
   pendingT:'حسابك بانتظار التحقق',pendingText:'حجوزاتك مؤكدة. أحضر بطاقتك الجامعية إلى مكتب الاستقبال ليتحقق المشرف من بياناتك.',bookedOk:'تم الحجز',bookedOkPending:'تم الحجز — حسابك بانتظار التحقق',bookedConfirmed:'الحجز مؤكد',ticketPending:'حسابك بانتظار التحقق من المشرف؛ أحضر بطاقتك الجامعية.',
   unverified:'غير متحقق',verifiedB:'متحقق',verifyBtn:'تحقق',verifyBtnLong:'تأكيد التحقق من البيانات',unverifyBtn:'إلغاء التحقق',verifiedToast:'تم التحقق من الحساب',verification:'التحقق من الحساب',verifyHint:'طابق الاسم والرقم الجامعي مع البطاقة الجامعية، ثم أكّد التحقق.',verifiedBy:'تحقق منه {n} في {d}',pendingF:'بانتظار التحقق',
   installApp:'تثبيت التطبيق',thisHour:'هذه الساعة',msgAllDay:'رسالة لكل طلاب هذا اليوم',
@@ -477,6 +512,11 @@ const T={
   msgTab:'Messages',chatTitle:'Messages with the center',chatHint:'Write your question and a staff member will reply here.',chatPh:'Write a message…',you2:'You',staffLbl:'Center staff',
   convos:'Conversations',newConvo:'New conversation',sidPh:'Student ID',open2:'Open',noConvos:'No conversations yet.',pickConvo:'Pick a conversation or start a new one.',
   notFoundSid:'No registered student has this ID.',back:'Back',searchConvo:'Search by name or ID',studentLbl:'Student',
+  scanTab:'Scan',scanReady:'Ready — press the scan button',scanTapToStart:'Tap here to start scanning',scanCount:'{n} in',scanWaitPh:'Waiting for a ticket scan…',scanTypePh:'Type the ticket code, e.g. CRC-2026-AB12',scanCheck:'Check',scanManual:'Type a code',scanAuto:'Back to scanning',soundOn:'Sound: on',soundOff:'Sound: off',
+  scanIdleT:'Scan a student’s ticket',scanIdleH:'Aim the scanner at the QR code on the student’s pass. Check-in happens automatically and the result shows here.',scanRecent:'Recent scans',
+  camScan:'Scan with camera',camHint:'Point the camera at the QR code.',camFail:'Couldn’t start the camera. Allow camera access, or use the device scanner.',
+  sc_ok:'Checked in',sc_already:'Already checked in',sc_alreadyBy:'Checked in by {n} at {t}',sc_early:'Too early — the hour hasn’t started',sc_ended:'This booking’s hour has ended',sc_noshow:'Marked no-show earlier; the seat was released',sc_future:'Ticket is for a later day',sc_past:'Ticket is for an earlier day',sc_cancelled:'Booking cancelled',sc_notfound:'Ticket not found',sc_invalid:'Not a center ticket',sc_ambiguous:'Duplicate code — search by student ID at the desk',sc_error:'Connection problem — try again',
+  sc_force:'Check in anyway',sc_late:'More than 10 minutes late',sc_verifyHint:'Match the name and ID against the university card.',
   pendingT:'Your account is awaiting verification',pendingText:'Your bookings are confirmed. Bring your university ID card to the desk so a supervisor can verify your details.',bookedOk:'Booked',bookedOkPending:'Booked — account awaiting verification',bookedConfirmed:'Booking confirmed',ticketPending:'Your account is awaiting verification by a supervisor; bring your university ID card.',
   unverified:'Unverified',verifiedB:'Verified',verifyBtn:'Verify',verifyBtnLong:'Confirm details verified',unverifyBtn:'Undo verification',verifiedToast:'Account verified',verification:'Account verification',verifyHint:'Match the name and student ID against the university ID card, then confirm.',verifiedBy:'Verified by {n} on {d}',pendingF:'Awaiting verification',
   installApp:'Install app',thisHour:'This hour',msgAllDay:'Message everyone today',
@@ -680,6 +720,7 @@ function makeSupabaseStore(C){
     },
     async markRead(uid,id){must(await stu.rpc('mark_read',{p_id:id}))},
     watchThreads(cb){return live(stf,{table:'threads',fetch:async()=>must(await stf.from('threads').select('*').order('last_at',{ascending:false}).limit(300)).map(r=>({uid:r.student,sid:r.sid,name:r.name,lastAt:ms(r.last_at),lastText:r.last_text,lastFrom:r.last_from,staffSeenAt:ms(r.staff_seen_at)})),cb})},
+    async scanTicket(t,force){return must(await stf.rpc('scan_ticket',{p_id:t.id||'',p_code:t.code||'',p_date:t.date||'',p_force:!!force}))},
     async markThreadSeen(uid){try{await stf.rpc('mark_thread_seen',{p_student:uid})}catch(e){}},
   };
 }
@@ -713,6 +754,25 @@ const ICONS={
 };
 
 /* ---------- QR ---------- */
+/* Ticket QR payload: digits only, so a keyboard-wedge scanner types it the same in any keyboard language.
+   71 | YYYYMMDD | sid length (2) | sid | code (4 chars x 2 digits) */
+const CODE_ABC='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function ticketPayload(b){
+  const sid=String(b.studentId||b.student_id||''),code=String(b.code||''),c4=code.slice(-4).toUpperCase();
+  const date=String(b.date||'').replace(/-/g,'');
+  if(!/^\d{8}$/.test(date)||!/^\d{1,12}$/.test(sid)||c4.length!==4||[...c4].some(ch=>CODE_ABC.indexOf(ch)<0)) return code;
+  return '71'+date+String(sid.length).padStart(2,'0')+sid+[...c4].map(ch=>String(CODE_ABC.indexOf(ch)).padStart(2,'0')).join('');
+}
+function parseTicket(raw){
+  const t=String(raw||'').replace(/[\u0660-\u0669]/g,d=>String(d.charCodeAt(0)-0x660)).replace(/[\s\r\n]+/g,'').toUpperCase();
+  let m=t.match(/^71(\d{4})(\d{2})(\d{2})(\d{2})(\d+)$/);
+  if(m){const n=+m[4],rest=m[5];if(n>=1&&n<=12&&rest.length===n+8){const sid=rest.slice(0,n),cd=rest.slice(n);
+    const chars=[0,2,4,6].map(i=>CODE_ABC[+cd.slice(i,i+2)]);
+    if(chars.every(Boolean)){const date=`${m[1]}-${m[2]}-${m[3]}`;return{id:`${date}_${sid}`,code:`CRC-${m[1]}-${chars.join('')}`,date}}}}
+  m=t.match(/CRC-?(\d{4})-?([A-Z0-9]{4})/);
+  if(m) return{id:'',code:`CRC-${m[1]}-${m[2]}`,date:''};
+  return null;
+}
 function qrFor(text){try{const q=qrcode(0,'M');q.addData(text);q.make();return q}catch(e){return null}}
 function QR({text}){
   const svg=useMemo(()=>{const q=qrFor(text);return q?q.createSvgTag({cellSize:4,margin:0,scalable:true}):''},[text]);
@@ -1319,7 +1379,7 @@ function TicketModal({L,lang,store,id,fallback,say,onClose,unverified}){
       g.fillStyle='#111827';g.font='600 34px "IBM Plex Mono", monospace';g.direction='ltr';g.textAlign=rtl?'right':'left';g.fillText(b.code,tx,100);g.direction=rtl?'rtl':'ltr';
       const rows=[[L.name,b.studentName],[L.studentId,b.studentId],[L.section,sec[lang]],[L.time,longDate(b.date,lang)+' · '+slotLabel(sl,L)],[L.st_active===''?'':L.colStatus,L['st_'+badge]]];
       let y=150;rows.forEach(([k,v])=>{g.fillStyle='#5B6576';g.font='500 15px "IBM Plex Sans Arabic", sans-serif';g.fillText(k,tx,y);g.fillStyle='#111827';g.font='600 22px "IBM Plex Sans Arabic", sans-serif';g.fillText(String(v),tx,y+28);y+=54});
-      const q=qrFor(b.code);const n=q.getModuleCount();const size=260;const cell=Math.floor(size/n);const qx=rtl?40:W-40-cell*n,qy=(H-cell*n)/2+5;
+      const q=qrFor(ticketPayload(b));const n=q.getModuleCount();const size=260;const cell=Math.floor(size/n);const qx=rtl?40:W-40-cell*n,qy=(H-cell*n)/2+5;
       g.fillStyle='#111827';for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))g.fillRect(qx+k*cell,qy+r*cell,cell,cell);
       g.strokeStyle='#D6DCE5';g.setLineDash([8,8]);g.lineWidth=2;const lx=rtl?40+cell*n+30:W-40-cell*n-30;g.beginPath();g.moveTo(lx,30);g.lineTo(lx,H-20);g.stroke();
       const blob=await new Promise(r=>c.toBlob(r,'image/png'));
@@ -1341,7 +1401,7 @@ function TicketModal({L,lang,store,id,fallback,say,onClose,unverified}){
           <div><dt>${L.time}</dt><dd className="num">${slotLabel(sl,L)}<div className="hint" style=${{fontWeight:400}}>${longDate(b.date,lang)}</div></dd></div>
         </dl>
       </div>
-      <div className="stub"><${QR} text=${b.code}/><span className="hint">${L.hour} ${sl.id}</span></div>
+      <div className="stub"><${QR} text=${ticketPayload(b)}/><span className="hint">${L.hour} ${sl.id}</span></div>
     </article>
     ${unverified&&html`<div className="banner pendingV"><b>${L.bookedConfirmed}</b><span>${L.ticketPending}</span></div>`}
     <p className="hint" style=${{margin:0}}>${L.showAtDesk}</p>
@@ -1593,6 +1653,130 @@ function ExportModal({L,lang,b,d,date,slotId,onClose,say}){
   </${Modal}>`;
 }
 
+/* ---------- Ticket scanner (hardware wedge scanners such as Honeywell EDA52, or the camera) ---------- */
+let _ac=null;
+function beep(kind){
+  try{
+    _ac=_ac||new (window.AudioContext||window.webkitAudioContext)();
+    const tones=kind==='ok'?[[1046,.08],[1318,.12]]:kind==='warn'?[[660,.18]]:[[220,.35]];
+    let t=_ac.currentTime;
+    tones.forEach(([f,d])=>{const o=_ac.createOscillator(),g=_ac.createGain();o.type='square';o.frequency.value=f;g.gain.value=.08;o.connect(g);g.connect(_ac.destination);o.start(t);o.stop(t+d);t+=d+.04});
+  }catch(e){}
+  try{navigator.vibrate&&navigator.vibrate(kind==='ok'?60:kind==='warn'?[80,60,80]:[220,80,220])}catch(e){}
+}
+const SCAN_KIND={ok:'ok',already:'warn',early:'warn',ended:'warn',was_no_show:'warn',ambiguous:'warn',future_day:'bad',past_day:'bad',cancelled:'bad',not_found:'bad',invalid:'bad',error:'bad'};
+
+function CameraScan({L,onResult,onClose}){
+  const vid=useRef();const [err,setErr]=useState('');
+  useEffect(()=>{
+    let stream=null,stop=false,timer=null;
+    (async()=>{
+      try{
+        const det=new window.BarcodeDetector({formats:['qr_code']});
+        stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+        if(stop) return;vid.current.srcObject=stream;await vid.current.play();
+        const tick=async()=>{if(stop) return;try{const r=await det.detect(vid.current);if(r&&r[0]&&r[0].rawValue){onResult(r[0].rawValue);return}}catch(e){}timer=setTimeout(tick,200)};
+        tick();
+      }catch(e){setErr(L.camFail)}
+    })();
+    return()=>{stop=true;clearTimeout(timer);if(stream)stream.getTracks().forEach(t=>t.stop())};
+  },[]);
+  return html`<${Modal} onClose=${onClose}>
+    <div className="mh"><h2>${L.camScan}</h2><button className="btn ghost" onClick=${onClose} aria-label=${L.close}>✕</button></div>
+    ${err?html`<div className="err">${err}</div>`:html`<video ref=${vid} className="camVid" playsInline muted></video><p className="hint" style=${{margin:0,textAlign:'center'}}>${L.camHint}</p>`}
+  </${Modal}>`;
+}
+
+function Scanner({L,lang,store,say,who}){
+  const inp=useRef();const resRef=useRef();const timer=useRef(null);const last=useRef({raw:'',at:0});
+  const [val,setVal]=useState('');const [focused,setFocused]=useState(false);const [manual,setManual]=useState(false);
+  const [res,setRes]=useState(null);const [busy,setBusy]=useState(false);const [log,setLog]=useState([]);const [count,setCount]=useState(0);
+  const [sound,setSound]=useState(()=>ls.get('crc.scanSound',true));const [cam,setCam]=useState(false);
+  const hasCam=typeof window.BarcodeDetector!=='undefined'&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
+  const keep=e=>e.preventDefault();
+  const focus=()=>{const el=inp.current;if(el&&document.activeElement!==el)el.focus({preventScroll:true})};
+  useEffect(()=>{focus();let lock=null;(async()=>{try{lock=await navigator.wakeLock.request('screen')}catch(e){}})();return()=>{try{lock&&lock.release()}catch(e){}}},[]);
+  // keep the scan field focused, unless the user is typing somewhere else or a window is open
+  const onBlur=()=>{setTimeout(()=>{if(document.activeElement!==inp.current)setFocused(false)},250);setTimeout(()=>{const a=document.activeElement;if(cam||document.querySelector('.scrim')) return;if(!a||a===document.body||a.tagName==='BUTTON')focus()},60)};
+  // a key pressed while the field isn't focused (e.g. right after tapping a button) still reaches it
+  useEffect(()=>{const h=e=>{if(cam||document.querySelector('.scrim')) return;const a=document.activeElement;if(a===inp.current||(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+      if(e.key&&e.key.length===1){focus();setVal(v=>v+e.key);schedule();e.preventDefault()}else if(e.key==='Enter'&&inp.current&&inp.current.value){submit(inp.current.value);e.preventDefault()}};
+    document.addEventListener('keydown',h);return()=>document.removeEventListener('keydown',h)},[cam]);
+  function schedule(){clearTimeout(timer.current);timer.current=setTimeout(()=>{const v=inp.current?inp.current.value:'';if(!manual&&parseTicket(v))submit(v)},140)}
+  async function submit(raw,force){
+    clearTimeout(timer.current);
+    const text=String(raw||'').trim();setVal('');if(inp.current)inp.current.value='';
+    if(!text) return;
+    const now=Date.now();if(!force&&text===last.current.raw&&now-last.current.at<2000) return;
+    last.current={raw:text,at:now};
+    const t=parseTicket(text);
+    if(!t){show({result:'invalid',raw:text});return}
+    setBusy(true);
+    try{const r=await store.scanTicket(t,force);show({...r,raw:text,t})}catch(e){show({result:'error',raw:text})}
+    setBusy(false);focus();
+  }
+  function show(r){
+    const kind=SCAN_KIND[r.result]||'bad';
+    if(sound)beep(kind);else try{navigator.vibrate&&navigator.vibrate(kind==='ok'?60:[80,60,80])}catch(e){}
+    if(r.result==='ok')setCount(c=>c+1);
+    setRes({...r,kind,at:Date.now()});
+    setLog(l=>[{key:Date.now()+Math.random(),...r,kind,at:Date.now()},...l].slice(0,10));
+  }
+  useEffect(()=>{if(res&&resRef.current)try{resRef.current.scrollIntoView({block:'nearest',behavior:'smooth'})}catch(e){}},[res&&res.at]);
+  async function verifyNow(){if(!res||!res.uid) return;try{await store.verifyStudent(res.uid,true);setRes(r=>({...r,verified:true}));say(L.verifiedToast)}catch(e){say(L.errGeneric)}focus()}
+  const sec=res&&res.section?secById(res.section):null;const sl=res&&res.slot_id?slotById(res.slot_id):null;
+  const title=r=>({ok:L.sc_ok,already:L.sc_already,early:L.sc_early,ended:L.sc_ended,was_no_show:L.sc_noshow,future_day:L.sc_future,past_day:L.sc_past,cancelled:L.sc_cancelled,not_found:L.sc_notfound,invalid:L.sc_invalid,ambiguous:L.sc_ambiguous,error:L.sc_error}[r.result]||L.sc_error);
+  const canForce=res&&['early','ended','was_no_show'].includes(res.result);
+  return html`
+  <section className=${'panel scanBar'+(focused?' on':'')} onClick=${focus}>
+    <div className="row" style=${{gap:'10px',justifyContent:'space-between'}}>
+      <div className="scanStatus"><span className=${'scanDot'+(focused?' on':'')}></span><b>${focused?L.scanReady:L.scanTapToStart}</b></div>
+      <span className="pill s-ok num">${L.scanCount.replace('{n}',count)}</span>
+    </div>
+    <form onSubmit=${e=>{e.preventDefault();submit(inp.current.value)}} className="row" style=${{gap:'8px'}}>
+      <input ref=${inp} id="scan-input" className="search scanInput" dir="ltr" autoComplete="off" autoCorrect="off" autoCapitalize="characters" spellCheck="false"
+        inputMode=${manual?'text':'none'} enterKeyHint="go" placeholder=${manual?L.scanTypePh:L.scanWaitPh} value=${val}
+        onInput=${e=>{const v=e.target.value;if(/[\r\n]/.test(v)){submit(v);return}setVal(v);schedule()}}
+        onKeyDown=${e=>{if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();submit(e.target.value)}}}
+        onFocus=${()=>setFocused(true)} onBlur=${onBlur}/>
+      ${manual&&html`<button className="btn pri" onMouseDown=${keep} disabled=${busy}>${L.scanCheck}</button>`}
+    </form>
+    <div className="row scanOpts" style=${{gap:'8px'}}>
+      <button type="button" className="btn" onMouseDown=${keep} onClick=${e=>{e.stopPropagation();setManual(m=>!m);setTimeout(focus,30)}}>${manual?L.scanAuto:L.scanManual}</button>
+      ${hasCam&&html`<button type="button" className="btn" onMouseDown=${keep} onClick=${e=>{e.stopPropagation();setCam(true)}}>${L.camScan}</button>`}
+      <button type="button" className="btn ghost" onMouseDown=${keep} onClick=${e=>{e.stopPropagation();const v=!sound;setSound(v);ls.set('crc.scanSound',v);if(v)beep('ok')}}>${sound?L.soundOn:L.soundOff}</button>
+    </div>
+  </section>
+
+  ${!res?html`<section className="panel scanIdle"><div className="scanIcon" aria-hidden="true">⌁</div><h2>${L.scanIdleT}</h2><p className="hint" style=${{margin:0}}>${L.scanIdleH}</p></section>`:html`
+  <section ref=${resRef} className=${'scanRes k-'+res.kind}>
+    <div className="scanHead"><span className="scanMark" aria-hidden="true">${res.kind==='ok'?'✓':res.kind==='warn'?'!':'✕'}</span><h2>${title(res)}</h2></div>
+    ${res.student_name&&html`<div className="scanWho"><div className="nm">${res.student_name}</div><div className="mono num" dir="ltr">${res.student_id}</div></div>`}
+    ${res.code&&html`<dl className="kv scanKv">
+      <div><dt>${L.section}</dt><dd>${sec?sec[lang]:''}</dd></div>
+      <div><dt>${L.time}</dt><dd className="num">${sl?slotLabel(sl,L):''}</dd></div>
+      <div><dt>${L.date}</dt><dd>${res.date?longDate(res.date,lang):''}</dd></div>
+      <div><dt>${L.ticketCode}</dt><dd className="mono" dir="ltr" style=${{textAlign:'start'}}>${res.code}</dd></div>
+    </dl>`}
+    ${res.result==='already'&&res.desk_at&&html`<p className="scanNote">${L.sc_alreadyBy.replace('{n}',res.desk_by_name||'').replace('{t}',fmtStamp(Date.parse(res.desk_at),lang))}</p>`}
+    ${res.result==='ok'&&res.late&&html`<p className="scanNote">${L.sc_late}</p>`}
+    ${res.code&&!res.verified&&['ok','already'].includes(res.result)&&html`<div className="scanFlag">
+      <span><b>${L.unverified}:</b> ${L.sc_verifyHint}</span><button className="btn pri" onMouseDown=${keep} onClick=${verifyNow}>${L.verifyBtn}</button></div>`}
+    ${res.restricted&&html`<div className="scanFlag bad"><b>${L.restrictedF}</b></div>`}
+    ${canForce&&html`<div className="row"><button className="btn pri" onMouseDown=${keep} disabled=${busy} onClick=${()=>submit(res.raw,true)}>${L.sc_force}</button></div>`}
+    ${(res.result==='invalid'||res.result==='not_found')&&res.raw&&html`<p className="hint mono" dir="ltr" style=${{margin:0,overflowWrap:'anywhere'}}>${res.raw.slice(0,80)}</p>`}
+  </section>`}
+
+  ${log.length>1&&html`<section className="panel" style=${{display:'grid',gap:'8px'}}>
+    <h2 style=${{margin:0,fontSize:'15px'}}>${L.scanRecent}</h2>
+    <div className="mine">${log.slice(1).map(r=>html`<div key=${r.key} className="mineRow scanLog">
+      <div style=${{minWidth:0}}><b>${r.student_name||r.code||'—'}</b> <span className="hint mono num" dir="ltr">${r.student_id||''}</span><div className="hint num">${fmtStamp(r.at,lang)}</div></div>
+      <span className=${'pill '+(r.kind==='ok'?'s-ok':r.kind==='warn'?'s-warn':'s-bad')}>${title(r)}</span>
+    </div>`)}</div>
+  </section>`}
+  ${cam&&html`<${CameraScan} L=${L} onClose=${()=>{setCam(false);setTimeout(focus,60)}} onResult=${raw=>{setCam(false);submit(raw);setTimeout(focus,60)}}/>`}`;
+}
+
 /* ---------- Management (reception + settings) ---------- */
 function Manage({L,lang,store,say,tick,cfg,staff,who,onSignOut}){
   const isAdmin=who.role==='admin';
@@ -1603,11 +1787,12 @@ function Manage({L,lang,store,say,tick,cfg,staff,who,onSignOut}){
   useEffect(()=>store.watchThreads(setThreads),[store]);
   const unreadT=threads.filter(threadUnread).length;
   return html`
-  <div className="row signbar">
-    <span className="hint">${L.signedAs}</span><b>${who.name}</b>${who.u&&html`<span className="hint mono" dir="ltr">@${who.u}</span>`}
+  <div className="row signbar mgBar">
+    <span className="hint hideSm">${L.signedAs}</span><b>${who.name}</b>${who.u&&html`<span className="hint mono hideSm" dir="ltr">@${who.u}</span>`}
     <span className=${'pill '+(isAdmin?'s-acc':'s-ok')}>${isAdmin?L.roleAdmin:L.roleStaff}</span>
-    <div className="row" style=${{gap:'8px',marginInlineStart:'auto'}}>
+    <div className="row mgNav" style=${{gap:'8px',marginInlineStart:'auto'}}>
       <div className="seg" role="group">
+        <button aria-pressed=${tab==='scan'} onClick=${()=>pick('scan')}>${L.scanTab}</button>
         <button aria-pressed=${tab==='desk'} onClick=${()=>pick('desk')}>${L.deskTab}</button>
         <button aria-pressed=${tab==='msgs'} onClick=${()=>pick('msgs')}>${L.msgTab}${unreadT>0&&html` <span className="dot num">${unreadT}</span>`}</button>
         ${isAdmin&&html`<button aria-pressed=${tab==='settings'} onClick=${()=>pick('settings')}>${L.settingsTab}</button>`}
@@ -1617,6 +1802,7 @@ function Manage({L,lang,store,say,tick,cfg,staff,who,onSignOut}){
   </div>
   ${tab==='settings'?html`<${Settings} L=${L} lang=${lang} store=${store} say=${say} cfg=${cfg} staff=${staff} who=${who}/>`:
     tab==='msgs'?html`<${StaffMessages} L=${L} lang=${lang} store=${store} who=${who} threads=${threads} say=${say}/>`:
+    tab==='scan'?html`<${Scanner} L=${L} lang=${lang} store=${store} say=${say} who=${who}/>`:
     html`<${Desk} L=${L} lang=${lang} store=${store} say=${say} tick=${tick} cfg=${cfg} who=${who}/>`}`;
 }
 
