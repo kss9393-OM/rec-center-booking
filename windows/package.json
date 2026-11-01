@@ -1,0 +1,47 @@
+{
+  "name": "rec-center-desktop",
+  "productName": "Campus Recreation Center",
+  "version": "1.0.0",
+  "description": "مركز الترفيه الطلابي — Campus Recreation Center booking (desktop app)",
+  "author": "Services Squire LLC",
+  "license": "SEE LICENSE IN ../LICENSE",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --x64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "43.7.11",
+    "electron-builder": "26.17.0"
+  },
+  "build": {
+    "appId": "com.servicessquire.crc",
+    "productName": "Campus Recreation Center",
+    "copyright": "© 2026 Services Squire LLC",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "offline.html", "build/icon.ico", "package.json"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.ico",
+      "executableName": "RecCenter",
+      "artifactName": "RecCenter-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "مركز الترفيه الطلابي",
+      "uninstallDisplayName": "مركز الترفيه الطلابي",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerLanguages": ["ar_SA", "en_US"],
+      "multiLanguageInstaller": true,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
