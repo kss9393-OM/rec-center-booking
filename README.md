@@ -78,6 +78,12 @@ A bilingual (Arabic / English) booking app for a campus recreation center. It ru
 
 تعمل مهمة على الخادم كل دقيقة (pg_cron). إذا لم يُسجَّل حضور الطالب بعد بداية الساعة بـ 10 دقائق (قابلة للتعديل) يُلغى الحجز ويتحرر المقعد، ويصل للطالب إشعار وللمشرفين تنبيه في تبويب 🔔 التنبيهات. عند تكرار عدم الحضور (مرتان خلال 30 يوماً افتراضياً) يصدر إنذار تلقائي ويُنبَّه المشرف. تُضبط القيم أو يُوقف ذلك من الإعدادات. إذا لم يُفعَّل pg_cron عند التثبيت شغّل `supabase/migrations/008_auto_no_show_schedule.sql`.
 
+### تطبيق ويندوز (Windows 10/11)
+
+رابط التحميل الثابت: https://github.com/kss9393-OM/rec-center-booking/releases/download/windows-app/RecCenter-Setup.exe
+
+شغّل `RecCenter-Setup.exe` واختر مكان التثبيت؛ يُنشأ اختصار «مركز الترفيه الطلابي» على سطح المكتب وقائمة ابدأ. الملف غير موقّع رقمياً، لذا قد يظهر تحذير «Windows protected your PC»: اضغط «More info» ثم «Run anyway». التطبيق يفتح النظام المباشر، فكل تحديث للموقع يظهر فيه تلقائياً. أجهزة المسح بمنفذ USB (تعمل كلوحة مفاتيح) تعمل في تبويب المسح مباشرة. يُبنى المثبّت تلقائياً عبر GitHub Actions عند تغيير مجلد `windows/`.
+
 ### تطبيق أندرويد (APK)
 يُبنى التطبيق تلقائياً على GitHub مع كل تحديث لمجلد `android/`، ويُنشر في صفحة **Releases** باسم **Android app**.
 - **رابط التنزيل الدائم:** https://github.com/kss9393-OM/rec-center-booking/releases/latest/download/rec-center.apk
@@ -161,6 +167,12 @@ A system admin creates the first developer account once (Settings → management
 ### Automatic no-show cancellation
 
 A server job runs every minute (pg_cron). If a student hasn't checked in 10 minutes (adjustable) after the hour starts, the booking is cancelled, the seat is freed, the student is notified, and supervisors get an alert under the 🔔 Alerts tab. Repeated no-shows (2 within 30 days by default) trigger an automatic warning and a supervisor alert. Adjust or switch this off in Settings. If pg_cron wasn't enabled during install, run `supabase/migrations/008_auto_no_show_schedule.sql`.
+
+### Windows app (Windows 10/11)
+
+Permanent download link: https://github.com/kss9393-OM/rec-center-booking/releases/download/windows-app/RecCenter-Setup.exe
+
+Run `RecCenter-Setup.exe` and choose where to install; it adds a "مركز الترفيه الطلابي" shortcut to the desktop and Start menu. The installer isn't code-signed, so Windows may show "Windows protected your PC": click "More info", then "Run anyway". The app opens the live system, so website updates appear automatically. USB barcode scanners (keyboard mode) work in the Scan tab. GitHub Actions rebuilds the installer whenever the `windows/` folder changes.
 
 ### Android app (APK)
 GitHub builds the app automatically on every change under `android/` and publishes it on the **Android app** release.
